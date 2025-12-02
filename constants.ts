@@ -155,7 +155,7 @@ export const MOVIE_SCENES: MovieScene[] = [
     prompt: 'Iconic game poster shot for God of War. Nordic mythology style.',
     category: 'game',
     previewColor: 'from-slate-500 to-cyan-900',
-    previewImage: 'https://images.unsplash.com/photo-1535905557558-afc4877a26fc?q=80&w=400',
+    previewImage: 'https://images.unsplash.com/photo-1542259691-3b7431e5c543?q=80&w=400', // Snowy mountain for Nordic feel
     styleKeywords: 'Santa Monica Studio style, one-shot camera feel, snowy Norse landscape, gritty realism, epic scale, high contrast, sharp focus.',
     roles: [
       {
@@ -538,7 +538,7 @@ export const MOVIE_SCENES: MovieScene[] = [
     prompt: 'Iconic movie poster shot from Gladiator. The character is Maximus. Wearing Roman general armor / gladiator armor. Standing in the Colosseum dust. Sword in hand. Sunlight streaming through clouds. Epic, historical.',
     category: 'action',
     previewColor: 'from-yellow-700 to-orange-900',
-    previewImage: 'https://images.unsplash.com/photo-1599839575945-a9e5af0c3fa5?q=80&w=400'
+    previewImage: 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?q=80&w=400' // Colosseum Image
   },
   {
     id: 'leon',
@@ -574,7 +574,7 @@ export const MOVIE_SCENES: MovieScene[] = [
     prompt: 'Iconic movie poster shot from Braveheart. The character is William Wallace. Wearing medieval kilt and armor. Face painted half blue. Screaming freedom or looking intense. Background is the Scottish Highlands. Gritty, epic war drama.',
     category: 'action',
     previewColor: 'from-blue-700 to-green-900',
-    previewImage: 'https://images.unsplash.com/photo-1533613220915-609f661a6fe1?q=80&w=400'
+    previewImage: 'https://images.unsplash.com/photo-1506353266980-fa7d533d69c2?q=80&w=400' // Highlands mist
   },
   {
     id: 'joker_dark_knight',
@@ -673,7 +673,7 @@ export const MOVIE_SCENES: MovieScene[] = [
     prompt: 'The Avengers team shot. Epic action.',
     category: 'action',
     previewColor: 'from-blue-800 to-red-800',
-    previewImage: 'https://images.unsplash.com/photo-1560932669-5e3252f28b84?q=80&w=400',
+    previewImage: 'https://images.unsplash.com/photo-1620002166946-444a95d7362d?q=80&w=400', // Comic/Hero style
     styleKeywords: 'Marvel Cinematic Universe style, high contrast, crisp digital clarity, dynamic action.',
     roles: [
       {
