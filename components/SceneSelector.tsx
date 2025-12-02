@@ -132,27 +132,31 @@ const SceneSelector: React.FC<SceneSelectorProps> = ({
         <div className="h-56 sm:h-64 relative">
           {previewScene ? (
             <>
-              {/* Background Image with Blur/Dim */}
+              {/* Background Container */}
               <div className="absolute inset-0 bg-black">
-                {previewScene.previewImage ? (
+                {/* Layer 1: Fallback Gradient (Always Rendered for safety) */}
+                <div className={`absolute inset-0 w-full h-full bg-gradient-to-br ${previewScene.previewColor || 'from-gray-900 to-black'} opacity-70`}></div>
+
+                {/* Layer 2: Image (Rendered on top, hides on error) */}
+                {previewScene.previewImage && (
                   <img 
                     src={previewScene.previewImage} 
                     alt="preview background" 
-                    className="w-full h-full object-cover opacity-60 group-hover:opacity-70 transition-all duration-[2s] group-hover:scale-105"
+                    className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-70 transition-all duration-[2s] group-hover:scale-105"
                     onError={(e) => {
+                      // Hide image if broken, revealing the gradient behind it
                       e.currentTarget.style.display = 'none';
                     }}
                   />
-                ) : (
-                    <div className={`w-full h-full bg-gradient-to-br ${previewScene.previewColor} opacity-50`}></div>
                 )}
-                {/* Tech Grid Overlay */}
-                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay"></div>
-                <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-transparent"></div>
+                
+                {/* Layer 3: Texture Overlays */}
+                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay pointer-events-none"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-transparent pointer-events-none"></div>
               </div>
 
               {/* Text Content */}
-              <div key={previewScene.id} className="absolute inset-0 p-6 sm:p-8 flex flex-col justify-center animate-fade-in z-10">
+              <div key={previewScene.id} className="absolute inset-0 p-6 sm:p-8 flex flex-col justify-center animate-fade-in z-10 pointer-events-none">
                   <div className="flex items-center gap-2 mb-3">
                     <span className="text-cinema-gold font-bold text-[10px] tracking-[0.2em] uppercase bg-black/50 border border-cinema-gold/30 px-2 py-1 rounded backdrop-blur-sm">
                       {CATEGORIES.find(c => c.id === previewScene.category)?.label || previewScene.category}
@@ -211,16 +215,23 @@ const SceneSelector: React.FC<SceneSelectorProps> = ({
                       : 'bg-gray-900/50 border-gray-800 hover:border-gray-600 hover:bg-gray-800'}
                   `}
                 >
-                  {/* Role Thumbnail */}
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 shrink-0 rounded overflow-hidden border border-gray-700 relative">
-                     {role.previewImage ? (
-                       <img src={role.previewImage} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                     ) : (
-                       <div className="w-full h-full bg-gray-800"></div>
+                  {/* Role Thumbnail with Fallback */}
+                  <div className={`w-16 h-16 sm:w-20 sm:h-20 shrink-0 rounded overflow-hidden border border-gray-700 relative bg-gradient-to-br from-gray-800 to-black`}>
+                     {role.previewImage && (
+                       <img 
+                        src={role.previewImage} 
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                       />
                      )}
+                     {/* Overlay Icon if no image or generic fallback */}
+                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20">
+                        <span className="text-xl">👤</span>
+                     </div>
+                     
                      {selectedRole?.id === role.id && (
-                       <div className="absolute inset-0 bg-cinema-gold/20 flex items-center justify-center">
-                         <span className="text-xl">✓</span>
+                       <div className="absolute inset-0 bg-cinema-gold/20 flex items-center justify-center z-10">
+                         <span className="text-xl drop-shadow-md">✓</span>
                        </div>
                      )}
                   </div>
@@ -257,7 +268,7 @@ const SceneSelector: React.FC<SceneSelectorProps> = ({
                 : 'border-cinema-800 hover:border-gray-500 hover:scale-[1.02]'}
             `}
           >
-            {/* Background Layer 1: Gradient */}
+            {/* Background Layer 1: Gradient Fallback */}
             <div className={`absolute inset-0 bg-gradient-to-br ${scene.previewColor} opacity-80 group-hover:opacity-100 transition-all`}></div>
             
             {/* Background Layer 2: Image Preview */}
