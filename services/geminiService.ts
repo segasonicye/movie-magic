@@ -1,4 +1,5 @@
 
+
 import { GoogleGenAI } from "@google/genai";
 import { AspectRatio } from "../types";
 
@@ -49,80 +50,82 @@ export const generateMovieSceneImage = async (
 
     // 1. Dynamic Category Styling
     const categoryStyles: Record<string, string> = {
-      action: "High contrast, dynamic motion blur, teal and orange color grading, grit, intensity, blockbuster aesthetic.",
-      romance: "Soft focus, blooming highlights, warm golden hour lighting, dreamy atmosphere, emotional depth.",
-      scifi: "Neon rim lighting, chromatic aberration, futuristic textures, sharp digital resolution, lens flares, cool blue/magenta tones.",
-      classic: "Vintage film grain, dramatic chiaroscuro lighting, timeless composition, silver screen elegance.",
-      drama: "Realistic textures, moody lighting, shallow depth of field, cinematic storytelling, emotional gravity.",
-      fantasy: "Ethereal lighting, magical particles, painterly textures, epic scale, vibrant colors.",
-      animation: "Vibrant saturated colors, bold lines, exaggerated lighting, illustrative style."
+      action: "Masterpiece quality, high contrast, dynamic motion blur, teal and orange color grading, grit, intensity, blockbuster aesthetic, detailed skin texture, sweat and grime.",
+      romance: "Masterpiece quality, soft focus, blooming highlights, warm golden hour lighting, dreamy atmosphere, emotional depth, 8k resolution, cinematic bokeh.",
+      scifi: "Masterpiece quality, neon rim lighting, chromatic aberration, futuristic textures, sharp digital resolution, lens flares, cool blue/magenta tones, hyper-detailed, anamorphic lens look.",
+      classic: "Masterpiece quality, vintage film grain, dramatic chiaroscuro lighting, timeless composition, silver screen elegance, high fidelity, rich shadows.",
+      drama: "Masterpiece quality, realistic textures, moody lighting, shallow depth of field, cinematic storytelling, emotional gravity, raw photo style, natural lighting.",
+      fantasy: "Masterpiece quality, ethereal lighting, magical particles, painterly textures, epic scale, vibrant colors, intricate details, subsurface scattering.",
+      animation: "Masterpiece quality, vibrant saturated colors, bold lines, exaggerated lighting, illustrative style, 3D render perfection, studio lighting.",
+      game: "Masterpiece quality, cinematic game cinematics, unreal engine 5 render, high fidelity, stylized realism, dramatic lighting, detailed textures, ray tracing."
     };
 
     // Combine broad category style with specific scene style keywords if available
-    const baseStyle = categoryStyles[metadata?.category || 'drama'] || "Cinematic lighting, high resolution.";
+    const baseStyle = categoryStyles[metadata?.category || 'drama'] || "Cinematic lighting, high resolution, 8k.";
     const specificStyle = metadata?.styleKeywords 
       ? `${metadata.styleKeywords} ${baseStyle}` 
       : baseStyle;
 
     // 2. Era-Specific Context
     const yearInt = parseInt(metadata?.year || "2024");
-    let eraAesthetic = "Modern digital cinema quality (Arri Alexa style).";
-    if (yearInt < 1960) eraAesthetic = "Vintage Technicolor or rich Black & White film stock (Kodak 5207), retro styling.";
-    else if (yearInt < 1980) eraAesthetic = "New Hollywood gritty film aesthetic, 35mm film grain, 70s/80s color palette.";
-    else if (yearInt < 2000) eraAesthetic = "Classic 90s blockbuster film look, sharp but organic.";
+    let eraAesthetic = "Modern digital cinema quality (Arri Alexa style), ultra-sharp.";
+    if (yearInt < 1960) eraAesthetic = "Vintage Technicolor or rich Black & White film stock (Kodak 5207), fine film grain, retro styling.";
+    else if (yearInt < 1980) eraAesthetic = "New Hollywood gritty film aesthetic, 35mm film grain, 70s/80s color palette, raw texture.";
+    else if (yearInt < 2000) eraAesthetic = "Classic 90s blockbuster film look, sharp but organic, Fuji film stock.";
 
     // 3. Typography & Text Handling
     const isChineseTitle = metadata?.useChineseTitle;
     const fontStyle = isChineseTitle 
       ? "Chinese Calligraphy or stylized Chinese movie font suitable for the genre" 
-      : "Large, cinematic font";
+      : "Large, cinematic font, professional typography";
     
     const titleInstruction = metadata?.title
       ? `TITLE: The title "${metadata.title}" MUST be visible on the poster. 
-         - Placement: Top or Bottom center.
+         - Placement: Top or Bottom center (standard movie poster layout).
          - Style: ${fontStyle} that matches the ${metadata.category} genre.
-         - Opacity: Ensure it overlays the image naturally.`
+         - Quality: Sharp, vector-like text.`
       : `TITLE: Create a dramatic title fitting for this scene.`;
 
-    const roleInstruction = metadata?.roleName 
-      ? `ROLE: The user is portraying the character "${metadata.roleName}". Ensure the styling matches this specific character's iconic look.`
-      : '';
-
     const fullPrompt = `
-      Task: Create a Masterpiece High-Definition Movie Poster featuring the user from the input photo.
+      [SYSTEM INSTRUCTION: EXPERT VFX SUPERVISOR & BIOMETRIC SPECIALIST]
       
-      MOVIE CONTEXT:
-      - Scene: ${scenePrompt}
-      - Genre: ${metadata?.category || 'General'}
-      - Year: ${metadata?.year || 'Unknown'}
-      - Style Keywords: ${specificStyle}
-      - Era Aesthetic: ${eraAesthetic}
-      - ${roleInstruction}
-
-      CRITICAL INSTRUCTIONS FOR IDENTITY FIDELITY:
+      GOAL: Generate a 2K resolution movie poster starring the person from the INPUT IMAGE.
       
-      1. ***FACE & HAIR RECONSTRUCTION (HIGHEST PRIORITY)***:
-         - The output image MUST feature the exact face AND HAIRSTYLE of the person provided in the input image.
-         - **DO NOT CHANGE THE FACE SHAPE.** Preserve the jawline, cheekbones, and forehead structure exactly.
-         - **DO NOT CHANGE THE FEATURES.** Eyes, nose, and mouth must be identical in shape, size, and relative position.
-         - **HAIRSTYLE PRESERVATION:** You MUST keep the user's actual hairstyle, hair length, hairline, and hair color from the input photo. Do NOT replace their hair with the movie character's wig or style.
-         - **DO NOT "BEAUTIFY" OR "GENERICIZE".** Keep wrinkles, skin texture, moles, scars, and asymmetry. This is crucial for realism.
-         - IDENTITY OVER STYLE: Even if the movie style is highly stylized, the face and hair must remain immediately recognizable as the specific user provided.
+      SOURCE MATERIAL:
+      - **INPUT IMAGE IS GROUND TRUTH**: The face in the input image is the absolute reference.
+      - Target Scene: ${scenePrompt}
+      - Character Role: ${metadata?.roleName || 'Protagonist'}
+      - Visual Style: ${specificStyle} | ${eraAesthetic}
 
-      2. ***PHOTOREALISTIC TEXTURE & LIGHTING***:
-         - Render skin with high-frequency details (pores, fine lines). Avoid the "waxy" or "smooth" AI look.
-         - Ensure the skin tone accurately reflects the input photo but adapts to the scene's lighting conditions (e.g., blue moonlight, warm sunset).
-         - LIGHTING MATCH: Re-light the user's face and hair to perfectly match the scene's lighting direction and shadows while keeping structural accuracy.
+      ⚠️ CRITICAL PRIORITY: IDENTITY CLONING MODE ⚠️
+      You must perform a "Digital Face Transplant" rather than a "Generation". 
+      
+      1. 🧬 ABSOLUTE FACIAL GEOMETRY LOCK
+         - **Do NOT change the face shape**: Keep the exact jawline width, chin shape, and cheekbone structure of the input user.
+         - **Do NOT "Westernize" or "Beautify"**: If the user has specific ethnic features, monolid eyes, a flat nose bridge, or asymmetry, PRESERVE THEM EXACTLY.
+         - **Do NOT fix imperfections**: Moles, scars, acne, and skin texture are key to likeness. Keep them.
+         - **Eyes are Critical**: The shape of the eyes must match 100%. Do not make them larger or more "Disney-like" unless the style is Animation.
 
-      3. ***SCENE INTEGRATION***:
-         - Seamlessly blend the head (face + hair) onto the character's body. The neck connection must be anatomically correct and flawless.
-         - EXPRESSION: Adapt the user's facial expression to fit the dramatic intensity of the scene (e.g., screaming, crying, stoic) WITHOUT distorting their identity features.
+      2. 💇 HAIRSTYLE PRESERVATION
+         - **Keep User's Hair**: Unless the user is wearing a hat/helmet in the scene description, use the user's ACTUAL hair from the photo.
+         - **Hairline Fidelity**: Do not lower or perfect the hairline.
+      
+      3. 🎭 EXPRESSION MAPPING
+         - Map the *emotion* of the scene (e.g., fierce, scared, happy) onto the *user's* face.
+         - Do NOT swap the face for a generic actor with that expression. Distort the USER'S muscles to show the emotion.
 
-      4. ***POSTER ELEMENTS***:
+      4. 🧱 REALISTIC TEXTURE (NO PLASTIC SKIN)
+         - Render individual skin pores and vellus hair.
+         - Ensure the lighting of the scene interacts with the skin's actual topography.
+
+      5. SCENE INTEGRATION
          - ${titleInstruction}
-         - TAGLINE: Generate a short, punchy tagline fitting the movie (In Chinese if the Title is Chinese, otherwise English).
-         - BILLING BLOCK: Add realistic small credits text at the bottom.
-         - COMPOSITION: Professional movie poster layout (Rule of Thirds, Central Hero).
+         - Composition: Professional movie poster layout.
+         - Lighting: Dramatic, cinematic lighting that matches the scene description but hits the user's face naturally.
+
+      QUALITY CHECK:
+      - If the output looks like a generic celebrity or stock photo model, IT IS A FAILURE.
+      - It must look EXACTLY like the input person, just in a costume.
     `;
 
     // Upgraded model for better quality and higher resolution

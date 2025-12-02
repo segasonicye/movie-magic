@@ -4,7 +4,6 @@ import SceneSelector from './components/SceneSelector';
 import ResultViewer from './components/ResultViewer';
 import { generateMovieSceneImage } from './services/geminiService';
 import { MovieScene, MovieRole, AspectRatio } from './types';
-import { MOVIE_SCENES } from './constants';
 
 const App: React.FC = () => {
   const [hasApiKey, setHasApiKey] = useState(false);
@@ -31,6 +30,7 @@ const App: React.FC = () => {
           const has = await window.aistudio.hasSelectedApiKey();
           setHasApiKey(has);
         } else {
+          // Fallback for environments without the helper (dev mode etc), assume true or handle error later
           setHasApiKey(true);
         }
       } catch (e) {
@@ -40,19 +40,11 @@ const App: React.FC = () => {
     checkKey();
   }, []);
 
-  // Reset Role when Scene changes
-  useEffect(() => {
-    if (selectedScene?.roles && selectedScene.roles.length > 0) {
-      setSelectedRole(selectedScene.roles[0]);
-    } else {
-      setSelectedRole(null);
-    }
-  }, [selectedScene]);
-
   const handleSelectKey = async () => {
     try {
       if (window.aistudio && window.aistudio.openSelectKey) {
         await window.aistudio.openSelectKey();
+        // Assume success to mitigate race condition
         setHasApiKey(true);
       }
     } catch (e) {
@@ -62,13 +54,19 @@ const App: React.FC = () => {
 
   const getPosterTitle = (scene: MovieScene | null): string | undefined => {
     if (!scene) return undefined;
+    
+    // For Chinese movies, extract the Chinese part (usually before the brackets)
     if (scene.useChineseTitle) {
        return scene.title.split('(')[0].trim();
     }
+
+    // For Western movies, prefer English title inside brackets
     const match = scene.title.match(/\((.*?)\)/);
     if (match && match[1]) {
       return match[1];
     }
+    
+    // Fallback logic
     if (scene.title.includes(':')) {
         return scene.title.split(':')[1].trim();
     }
@@ -83,14 +81,17 @@ const App: React.FC = () => {
     let metadata = { title: '', year: '', category: '', styleKeywords: '', useChineseTitle: false, roleName: '' };
 
     if (selectedScene) {
+      // Use Role Prompt if a role is selected, otherwise fallback to scene prompt
       promptToUse = selectedRole ? selectedRole.prompt : selectedScene.prompt;
+      
       titleToUse = getPosterTitle(selectedScene) || selectedScene.title;
+      
       metadata = {
         title: titleToUse,
         year: selectedScene.year,
         category: selectedScene.category,
         styleKeywords: selectedScene.styleKeywords || '',
-        useChineseTitle: selectedScene.useChineseTitle,
+        useChineseTitle: selectedScene.useChineseTitle || false,
         roleName: selectedRole ? selectedRole.name : ''
       };
     } else {
@@ -101,12 +102,15 @@ const App: React.FC = () => {
     setGenerationState({ loading: true, result: null, error: null });
 
     try {
+      // Re-instantiate AI client inside service to pick up key
       const generatedImageUrl = await generateMovieSceneImage(userImage, promptToUse, aspectRatio, metadata);
       setGenerationState({ loading: false, result: generatedImageUrl, error: null });
     } catch (err: any) {
       console.error(err);
+      
+      // Handle "Requested entity was not found" which often implies invalid/missing key for Pro models
       if (err.message && err.message.includes("Requested entity was not found")) {
-        setHasApiKey(false);
+        setHasApiKey(false); // Reset UI to force re-selection
         setGenerationState({ 
           loading: false, 
           result: null, 
@@ -126,221 +130,223 @@ const App: React.FC = () => {
     setGenerationState({ loading: false, result: null, error: null });
   };
 
-  const isGenerateDisabled = !userImage || !selectedScene;
+  const hasRoles = selectedScene?.roles && selectedScene.roles.length > 0;
+  const isGenerateDisabled = !userImage || !selectedScene || (hasRoles && !selectedRole);
   const showInputUI = !generationState.loading && !generationState.result;
 
-  // Filter images for marquee
-  const marqueeImages = MOVIE_SCENES
-    .filter(s => s.previewImage)
-    .map(s => s.previewImage!)
-    .slice(0, 20); // Limit to top 20 for performance
+  const getButtonText = () => {
+    if (!userImage) return "UPLOAD PHOTO FIRST (请先上传照片)";
+    if (!selectedScene) return "SELECT A SCENE (请选择剧本)";
+    if (hasRoles && !selectedRole) return "SELECT A ROLE (请选择角色)";
+    return "GENERATE VISUAL (生成海报)";
+  };
 
+  // --- API Key Selection Screen ---
   if (!hasApiKey) {
     return (
-      <div className="min-h-screen bg-cinema-950 text-white font-sans flex items-center justify-center p-4 relative overflow-hidden">
-        {/* Background Marquee for Login Screen */}
-         <div className="absolute inset-0 opacity-20 pointer-events-none flex flex-col gap-4 -rotate-6 scale-110">
-            <div className="flex gap-4 animate-scroll w-max">
-              {[...marqueeImages, ...marqueeImages].map((src, i) => (
-                <img key={i} src={src} className="h-64 w-auto rounded-lg grayscale hover:grayscale-0 transition-all duration-700" alt="" />
-              ))}
-            </div>
-             <div className="flex gap-4 animate-scroll-reverse w-max">
-              {[...marqueeImages, ...marqueeImages].map((src, i) => (
-                <img key={i} src={src} className="h-64 w-auto rounded-lg grayscale hover:grayscale-0 transition-all duration-700" alt="" />
-              ))}
-            </div>
-         </div>
-         <div className="absolute inset-0 bg-gradient-to-t from-cinema-950 via-cinema-950/80 to-transparent pointer-events-none"></div>
-
-        <div className="glass-panel p-10 rounded-3xl max-w-lg text-center shadow-[0_0_50px_rgba(0,0,0,0.5)] border border-cinema-gold/20 relative z-10">
-          <div className="w-20 h-20 bg-gradient-to-br from-cinema-gold to-yellow-700 text-black rounded-full flex items-center justify-center text-4xl mx-auto mb-8 shadow-lg shadow-yellow-900/40">
+      <div className="min-h-screen bg-cinema-900 text-white font-sans flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-cinema-800 rounded-2xl border border-cinema-700 p-8 text-center shadow-2xl">
+          <div className="w-16 h-16 bg-cinema-gold text-black rounded-full flex items-center justify-center text-3xl mx-auto mb-6">
             ✨
           </div>
-          <h1 className="text-4xl font-tech font-bold mb-4 tracking-wide text-white">MOVIE MAGIC AI</h1>
-          <p className="text-gray-400 mb-10 leading-relaxed text-lg">
-            开启 2K 高清电影海报生成体验。
-            <br/>需要连接 Google Gemini API。
+          <h1 className="text-3xl font-bold mb-4">开启高清电影魔法</h1>
+          <p className="text-gray-400 mb-8 leading-relaxed">
+            为了生成 2K 高清海报并确保人物的高度还原，我们需要使用 Gemini Pro 高级模型。
+            <br/><br/>
+            请连接您的 Google Cloud 项目 API Key (需启用 Billing)。
           </p>
           <button 
             onClick={handleSelectKey}
-            className="w-full py-4 bg-cinema-gold text-black font-bold font-tech text-xl rounded-xl hover:bg-white transition-all transform hover:scale-[1.02] shadow-lg shadow-cinema-gold/20"
+            className="w-full py-4 bg-cinema-gold text-black font-bold text-lg rounded-full hover:bg-yellow-500 transition-transform hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(212,175,55,0.3)]"
           >
-            CONNECT API KEY
+            连接 API Key 并开始
           </button>
+          <p className="mt-6 text-xs text-gray-600">
+            了解更多关于 <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" className="underline hover:text-gray-400">Gemini API Billing</a>
+          </p>
         </div>
       </div>
     );
   }
 
+  // --- Main App ---
   return (
-    <div className="min-h-screen font-sans selection:bg-cinema-accent selection:text-black pb-20 overflow-x-hidden">
+    <div className="min-h-screen bg-cinema-900 text-white font-sans selection:bg-cinema-gold selection:text-black pb-20">
       
-      {/* Dynamic Ambient Background */}
-      <div className="fixed top-0 left-0 w-full h-full pointer-events-none -z-10">
-         <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-purple-900/20 rounded-full blur-[120px] animate-pulse-slow"></div>
-         <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-900/10 rounded-full blur-[100px]"></div>
+      {/* Intro Section with Scrolling Background */}
+      <div className={`relative w-full h-80 overflow-hidden mb-8 ${showInputUI ? '' : 'hidden'}`}>
+        <div className="absolute inset-0 bg-gradient-to-b from-cinema-900 via-transparent to-cinema-900 z-10"></div>
+        <div className="absolute inset-0 z-0 opacity-30 animate-marquee whitespace-nowrap flex gap-4 items-center">
+            {/* Using a few images for the marquee effect */}
+             {[...Array(2)].map((_, i) => (
+              <div key={i} className="flex gap-4">
+                <img src="https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=400&h=600&fit=crop" className="h-80 w-auto object-cover grayscale opacity-50" />
+                <img src="https://images.unsplash.com/photo-1517604931442-71053e3e2642?w=400&h=600&fit=crop" className="h-80 w-auto object-cover grayscale opacity-50" />
+                <img src="https://images.unsplash.com/photo-1485846234645-a62644f84728?w=400&h=600&fit=crop" className="h-80 w-auto object-cover grayscale opacity-50" />
+                <img src="https://images.unsplash.com/photo-1440404653325-ab127d49abc1?w=400&h=600&fit=crop" className="h-80 w-auto object-cover grayscale opacity-50" />
+                <img src="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=400&h=600&fit=crop" className="h-80 w-auto object-cover grayscale opacity-50" />
+                <img src="https://images.unsplash.com/photo-1533613220915-609f661a6fe1?w=400&h=600&fit=crop" className="h-80 w-auto object-cover grayscale opacity-50" />
+              </div>
+            ))}
+        </div>
+        
+        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-center px-4">
+            <h1 className="text-5xl md:text-7xl font-bold tracking-tighter text-white drop-shadow-[0_0_25px_rgba(255,255,255,0.2)] mb-2 font-[Rajdhani]">
+              MOVIE MAGIC <span className="text-cinema-gold">AI</span>
+            </h1>
+            <p className="text-gray-300 text-lg md:text-xl font-light tracking-widest uppercase">
+              Star in your own cinematic masterpiece
+            </p>
+        </div>
       </div>
 
-      {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 border-b border-white/5 bg-black/50 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2 group cursor-default">
-            <div className="w-8 h-8 rounded bg-gradient-to-tr from-cinema-gold to-yellow-600 flex items-center justify-center text-black font-bold text-lg shadow-lg group-hover:rotate-12 transition-transform">M</div>
-            <h1 className="text-xl font-tech font-bold tracking-wider text-white">
-              MOVIE<span className="text-cinema-gold">MAGIC</span>
-            </h1>
+      <header className="border-b border-cinema-800 bg-cinema-900/80 backdrop-blur-md sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+            <span className="text-xs font-mono text-cinema-gold tracking-widest">REC ● LIVE</span>
           </div>
-          <div className="flex items-center gap-4">
-             <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full border border-cinema-accent/30 bg-cinema-accent/5">
-                <div className="w-1.5 h-1.5 rounded-full bg-cinema-accent animate-pulse"></div>
-                <span className="text-[10px] font-tech tracking-widest text-cinema-accent">SYSTEM ONLINE</span>
-             </div>
+          <div className="text-[10px] md:text-xs text-gray-500 font-mono border border-cinema-800 px-2 py-1 rounded bg-cinema-900/50 flex items-center gap-2">
+            <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+            SYSTEM: GEMINI 3 PRO PREVIEW (2K)
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 mt-28 relative">
-        
-        {/* Intro Section with Dynamic Poster Mix */}
-        <div className={`text-center mb-12 transition-all duration-500 relative py-12 ${showInputUI ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-10 hidden'}`}>
+      <main className="max-w-7xl mx-auto px-4 mt-8">
+        {/* Workflow container */}
+        <div className="flex flex-col lg:flex-row gap-8">
           
-          {/* Marquee Background */}
-          <div className="absolute inset-0 overflow-hidden rounded-3xl mask-gradient opacity-30 select-none pointer-events-none">
-             <div className="absolute inset-0 bg-gradient-to-r from-cinema-950 via-transparent to-cinema-950 z-10"></div>
-             
-             {/* Row 1 */}
-             <div className="flex gap-6 animate-scroll w-max mb-6 opacity-60 grayscale hover:grayscale-0 transition-all">
-                {[...marqueeImages, ...marqueeImages].map((src, i) => (
-                  <img key={`r1-${i}`} src={src} className="h-40 w-28 object-cover rounded shadow-lg" alt="" />
-                ))}
-             </div>
-             {/* Row 2 */}
-             <div className="flex gap-6 animate-scroll-reverse w-max opacity-40 grayscale hover:grayscale-0 transition-all">
-                {[...marqueeImages, ...marqueeImages].reverse().map((src, i) => (
-                  <img key={`r2-${i}`} src={src} className="h-40 w-28 object-cover rounded shadow-lg" alt="" />
-                ))}
-             </div>
-          </div>
-
-          <div className="relative z-20">
-            <h2 className="text-5xl md:text-7xl font-tech font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-b from-white to-gray-400 tracking-tight drop-shadow-2xl">
-              BE THE PROTAGONIST
-            </h2>
-            <p className="text-gray-300 text-lg md:text-xl font-light tracking-wide max-w-2xl mx-auto drop-shadow-md bg-black/40 backdrop-blur-sm p-2 rounded-lg border border-white/5 inline-block">
-              AI-Powered Cinematic Composition Engine
-            </p>
-          </div>
-        </div>
-
-        <div className="flex flex-col lg:flex-row gap-8 relative z-30">
-          
-          <div className={`contents ${showInputUI ? '' : 'hidden'}`}>
+          <div className={showInputUI ? 'contents' : 'hidden'}>
             
-            {/* Left Sidebar: Controls */}
-            <div className="w-full lg:w-[360px] flex flex-col gap-6 order-2 lg:order-1 shrink-0 animate-slide-up" style={{animationDelay: '0.1s'}}>
-               
-              {/* Step 1: Upload */}
-              <section className="glass-panel p-6 rounded-2xl tech-border group">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-tech font-bold text-gray-200">SOURCE DATA</h3>
-                  <span className="text-xs font-mono text-cinema-gold/70 border border-cinema-gold/30 px-1.5 rounded">STEP 01</span>
+            {/* Left Column: Upload & Settings */}
+            <div className="w-full lg:w-1/3 flex flex-col gap-6 order-2 lg:order-1">
+               {/* Step 1: Upload */}
+              <section className="bg-black/40 backdrop-blur-sm p-1 rounded-2xl border border-cinema-700/50 relative overflow-hidden group">
+                <div className="absolute top-0 left-0 w-20 h-20 border-l-2 border-t-2 border-cinema-700 rounded-tl-2xl opacity-50"></div>
+                <div className="absolute bottom-0 right-0 w-20 h-20 border-r-2 border-b-2 border-cinema-700 rounded-br-2xl opacity-50"></div>
+                
+                <div className="p-5">
+                   <div className="flex items-center gap-3 mb-4">
+                    <span className="text-4xl font-[Rajdhani] font-bold text-cinema-gold/20 absolute -top-2 right-4">01</span>
+                    <h3 className="text-lg font-bold text-white font-[Rajdhani] tracking-wide uppercase">Source Subject</h3>
+                  </div>
+                  <ImageUpload onImageSelected={setUserImage} />
+                  {userImage && (
+                    <div className="mt-3 flex items-center gap-2 text-green-400 text-xs bg-green-900/20 p-2 rounded border border-green-900/50">
+                      <span className="animate-pulse">●</span> SCAN COMPLETE: {userImage.name.substring(0, 15)}...
+                    </div>
+                  )}
                 </div>
-                <ImageUpload onImageSelected={setUserImage} />
               </section>
 
-              {/* Step 3: Aspect Ratio */}
-              <section className={`glass-panel p-6 rounded-2xl tech-border transition-all duration-500 ${!userImage ? 'opacity-40 grayscale' : 'opacity-100'}`}>
-                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-tech font-bold text-gray-200">OUTPUT FORMAT</h3>
-                  <span className="text-xs font-mono text-cinema-gold/70 border border-cinema-gold/30 px-1.5 rounded">STEP 03</span>
+              {/* Step 3: Format */}
+              <section className={`bg-black/40 backdrop-blur-sm p-6 rounded-2xl border border-cinema-700/50 transition-all relative ${!userImage ? 'opacity-50 grayscale' : ''}`}>
+                 <span className="text-4xl font-[Rajdhani] font-bold text-cinema-gold/20 absolute -top-2 right-4">03</span>
+                 <div className="flex items-center gap-3 mb-4">
+                  <h3 className="text-lg font-bold text-white font-[Rajdhani] tracking-wide uppercase">Output Ratio</h3>
                 </div>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-3 gap-3">
                   {(['9:16', '16:9', '1:1'] as AspectRatio[]).map((ratio) => (
                     <button
                       key={ratio}
                       onClick={() => setAspectRatio(ratio)}
                       className={`
-                        py-3 px-2 rounded-lg text-xs font-medium transition-all flex flex-col items-center justify-center gap-2 border
+                        py-3 px-2 rounded-lg border text-xs font-medium transition-all flex flex-col items-center justify-center gap-2 group
                         ${aspectRatio === ratio 
-                          ? 'bg-cinema-gold text-black border-cinema-gold shadow-[0_0_15px_rgba(255,215,0,0.3)]' 
-                          : 'bg-white/5 text-gray-400 border-white/5 hover:bg-white/10 hover:border-white/20'}
+                          ? 'bg-cinema-gold/10 text-cinema-gold border-cinema-gold shadow-[0_0_15px_rgba(212,175,55,0.2)]' 
+                          : 'bg-cinema-900/50 text-gray-500 border-cinema-800 hover:border-gray-600 hover:text-gray-300'}
                       `}
                     >
-                      <div className={`border-2 border-current rounded-[2px] opacity-80 ${
+                      <div className={`border border-current transition-all duration-300 ${
                         ratio === '9:16' ? 'w-3 h-5' : 
                         ratio === '16:9' ? 'w-5 h-3' : 'w-4 h-4'
-                      }`}></div>
-                      <span className="font-tech tracking-wider">{ratio}</span>
+                      } ${aspectRatio === ratio ? 'shadow-[0_0_8px_currentColor]' : ''}`}></div>
+                      <span className="font-[Rajdhani]">{ratio}</span>
                     </button>
                   ))}
                 </div>
               </section>
 
-              {/* Mobile CTA */}
-              <div className="lg:hidden sticky bottom-4 z-40">
+              {/* Action Button - Mobile */}
+              <div className="lg:hidden mt-4">
                  <button
                   onClick={handleGenerate}
                   disabled={isGenerateDisabled}
                   className={`
-                    w-full py-4 rounded-xl font-tech font-bold text-xl tracking-widest transition-all duration-300 shadow-xl
+                    w-full py-4 rounded-xl font-bold text-lg tracking-widest uppercase font-[Rajdhani] transition-all duration-300
+                    border border-transparent
                     ${isGenerateDisabled 
-                      ? 'bg-gray-800 text-gray-600 border border-gray-700 cursor-not-allowed' 
-                      : 'bg-cinema-gold text-black border border-yellow-400 hover:shadow-[0_0_30px_rgba(255,215,0,0.4)] hover:scale-[1.02] active:scale-95'
+                      ? 'bg-gray-800 text-gray-600 cursor-not-allowed border-gray-700' 
+                      : 'bg-cinema-gold text-black hover:bg-white hover:shadow-[0_0_30px_rgba(255,255,255,0.4)] active:scale-95 border-cinema-gold'
                     }
                   `}
                 >
-                  INITIALIZE RENDER
+                  {getButtonText()}
                 </button>
               </div>
             </div>
 
-            {/* Right Column: Scene Browser */}
-            <div className={`w-full lg:flex-1 order-1 lg:order-2 animate-slide-up ${!userImage ? 'lg:opacity-50 lg:pointer-events-none transition-opacity duration-500' : ''}`} style={{animationDelay: '0.2s'}}>
-               <section className="glass-panel p-1 rounded-2xl tech-border h-full">
-                <div className="p-5 border-b border-white/5 flex items-center justify-between">
-                  <h3 className="text-lg font-tech font-bold text-gray-200 flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-cinema-gold"></span>
-                    SCENARIO DATABASE
-                  </h3>
-                  <span className="text-xs font-mono text-cinema-gold/70 border border-cinema-gold/30 px-1.5 rounded">STEP 02</span>
-                </div>
+            {/* Right Column: Scene Selection */}
+            <div className={`w-full lg:w-2/3 order-1 lg:order-2 transition-all`}>
+               <section className="bg-black/20 backdrop-blur-sm rounded-2xl border border-cinema-700/30 p-1 relative">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-cinema-gold/5 blur-[60px] rounded-full pointer-events-none"></div>
                 
-                <div className="p-5">
+                <div className="p-4 sm:p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-3">
+                       <span className="text-4xl font-[Rajdhani] font-bold text-cinema-gold/20">02</span>
+                       <h3 className="text-lg sm:text-xl font-bold text-white font-[Rajdhani] tracking-wide uppercase">
+                         Select Scenario
+                       </h3>
+                    </div>
+                    {selectedScene && (
+                      <div className="text-xs text-cinema-gold border border-cinema-gold/30 px-2 py-1 rounded bg-cinema-gold/5 font-mono">
+                        ID: {selectedScene.id.toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+                  
                   <SceneSelector 
                     selectedSceneId={selectedScene?.id || null} 
-                    onSceneSelect={(scene) => setSelectedScene(scene)}
                     selectedRole={selectedRole}
+                    onSceneSelect={(scene) => {
+                      setSelectedScene(scene);
+                      setSelectedRole(null); // Reset role when scene changes
+                    }}
                     onRoleSelect={(role) => setSelectedRole(role)}
                   />
                 </div>
               </section>
 
-               {/* Desktop CTA */}
-               <div className="hidden lg:flex justify-end mt-6">
+               {/* Action Button - Desktop */}
+               <div className="hidden lg:flex justify-end mt-8">
                  <button
                   onClick={handleGenerate}
                   disabled={isGenerateDisabled}
                   className={`
-                    px-10 py-4 rounded-xl font-tech font-bold text-xl tracking-widest transition-all duration-300
+                    group relative px-12 py-5 rounded-xl font-bold text-xl tracking-widest uppercase font-[Rajdhani] transition-all duration-300 overflow-hidden
                     ${isGenerateDisabled 
-                      ? 'bg-white/5 text-gray-600 border border-white/5 cursor-not-allowed' 
-                      : 'bg-cinema-gold text-black hover:bg-white hover:shadow-[0_0_40px_rgba(255,255,255,0.3)] hover:-translate-y-1 active:scale-95 shadow-lg shadow-cinema-gold/20'
+                      ? 'bg-gray-900 text-gray-600 cursor-not-allowed border border-gray-800' 
+                      : 'bg-cinema-gold text-black shadow-[0_0_20px_rgba(212,175,55,0.2)] hover:shadow-[0_0_40px_rgba(212,175,55,0.6)] hover:scale-105 active:scale-95'
                     }
                   `}
                 >
-                  <span className="flex items-center gap-3">
-                    GENERATE VISUAL
-                    {!isGenerateDisabled && <span className="text-xl">↗</span>}
+                  <span className="relative z-10 flex items-center gap-3">
+                    {getButtonText()}
+                    {!isGenerateDisabled && <span className="group-hover:translate-x-1 transition-transform">►</span>}
                   </span>
+                  {!isGenerateDisabled && (
+                    <div className="absolute inset-0 bg-white/30 translate-y-full group-hover:translate-y-0 transition-transform duration-300 skew-y-12"></div>
+                  )}
                 </button>
               </div>
             </div>
           </div>
 
-          {/* Result View */}
+          {/* Result Area */}
           {!showInputUI && (
-             <div className="w-full flex justify-center animate-fade-in">
+             <div className="w-full">
                <ResultViewer 
                  imageUrl={generationState.result}
                  loading={generationState.loading}
@@ -352,6 +358,11 @@ const App: React.FC = () => {
 
         </div>
       </main>
+      
+      {/* Background Tech Overlay */}
+      <div className="fixed top-0 left-0 w-full h-full pointer-events-none -z-10 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20"></div>
+      <div className="fixed top-0 left-0 w-full h-full pointer-events-none -z-20 bg-gradient-to-b from-cinema-900 to-black"></div>
+
     </div>
   );
 };

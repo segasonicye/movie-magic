@@ -1,12 +1,13 @@
-
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 
 interface ImageUploadProps {
   onImageSelected: (file: File | null) => void;
 }
 
 const ImageUpload: React.FC<ImageUploadProps> = ({ onImageSelected }) => {
+  // State
   const [imageSrc, setImageSrc] = useState<string | null>(null);
+  const [originalFile, setOriginalFile] = useState<File | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [confirmedPreview, setConfirmedPreview] = useState<string | null>(null);
 
@@ -16,16 +17,25 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onImageSelected }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   
+  // Refs
   const inputRef = useRef<HTMLInputElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // --- File Handling ---
+
   const handleFile = (file: File) => {
-    if (!file.type.startsWith('image/')) return;
+    if (!file.type.startsWith('image/')) {
+      alert("请上传图片文件");
+      return;
+    }
+    
+    setOriginalFile(file);
     const reader = new FileReader();
     reader.onload = (e) => {
       setImageSrc(e.target?.result as string);
       setIsEditing(true);
+      // Reset editor
       setScale(1);
       setOffset({ x: 0, y: 0 });
     };
@@ -33,17 +43,28 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onImageSelected }) => {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) handleFile(e.target.files[0]);
+    if (e.target.files && e.target.files[0]) {
+      handleFile(e.target.files[0]);
+    }
+    // Reset input so same file can be selected again
     e.target.value = '';
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFile(e.dataTransfer.files[0]);
+    }
   };
 
+  // --- Editor Interaction (Pan & Zoom) ---
+
   const handleMouseDown = (e: React.MouseEvent | React.TouchEvent) => {
-    e.preventDefault();
+    // We don't preventDefault for mouse, but we do for touch to prevent scrolling
+    if ('touches' in e) {
+      // e.preventDefault(); // Handled by CSS touch-action: none usually, but safe to keep
+    }
+    
     setIsDragging(true);
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
     const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
@@ -52,53 +73,86 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onImageSelected }) => {
 
   const handleMouseMove = (e: React.MouseEvent | React.TouchEvent) => {
     if (!isDragging) return;
+    e.preventDefault(); // Prevent scrolling on touch
+    
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
     const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-    setOffset({ x: clientX - dragStart.x, y: clientY - dragStart.y });
+    
+    setOffset({
+      x: clientX - dragStart.x,
+      y: clientY - dragStart.y
+    });
   };
 
-  const handleMouseUp = () => setIsDragging(false);
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  // --- Cropping Logic ---
 
   const generateCrop = async () => {
     if (!imageRef.current || !containerRef.current || !imageSrc) return;
+
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const outputSize = 1024; // High res
+    // Use high resolution for output
+    const outputSize = 1024; 
     canvas.width = outputSize;
     canvas.height = outputSize;
+
+    // Fill background (black) to avoid transparency issues
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, outputSize, outputSize);
 
+    // Calculate Ratios
     const containerRect = containerRef.current.getBoundingClientRect();
-    const pixelRatio = outputSize / containerRect.width;
-    const img = imageRef.current;
+    const containerW = containerRect.width;
+    
+    // The visual scale factor between the DOM container and our Canvas
+    const pixelRatio = outputSize / containerW;
 
     ctx.save();
-    ctx.translate(outputSize / 2, outputSize / 2);
-    ctx.translate(offset.x * pixelRatio, offset.y * pixelRatio);
-    ctx.scale(scale, scale);
     
-    // Draw based on the fitted size in container
+    // 1. Move Origin to Center of Canvas
+    ctx.translate(outputSize / 2, outputSize / 2);
+    
+    // 2. Apply User Offset (scaled)
+    ctx.translate(offset.x * pixelRatio, offset.y * pixelRatio);
+    
+    // 3. Apply Scale
+    ctx.scale(scale, scale);
+
+    // 4. Draw Image Centered
+    const img = imageRef.current;
+    
+    // The image's visual width in DOM is '100%' of container => containerW
+    // So on canvas, its width should be containerW * pixelRatio => outputSize.
     const drawWidth = outputSize;
     const drawHeight = (img.naturalHeight / img.naturalWidth) * drawWidth;
     
+    // Draw centered at the current origin
     ctx.drawImage(img, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
+    
     ctx.restore();
 
+    // Convert to Blob/File
     canvas.toBlob((blob) => {
       if (blob) {
-        const file = new File([blob], "crop.png", { type: "image/png" });
+        const file = new File([blob], "cropped_image.png", { type: "image/png" });
         onImageSelected(file);
+        
+        // Create preview URL
         setConfirmedPreview(URL.createObjectURL(blob));
         setIsEditing(false);
       }
-    }, 'image/png');
+    }, 'image/png', 0.95);
   };
 
   const handleReset = () => {
     setImageSrc(null);
+    setOriginalFile(null);
     setConfirmedPreview(null);
     setIsEditing(false);
     onImageSelected(null);
@@ -106,102 +160,134 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onImageSelected }) => {
 
   // --- Render ---
 
+  // 1. Upload State
   if (!imageSrc) {
     return (
-      <div 
-        className="relative group h-64 border border-dashed border-gray-700 rounded-xl flex flex-col items-center justify-center cursor-pointer overflow-hidden transition-all hover:border-cinema-gold hover:bg-white/5"
-        onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-        onDrop={handleDrop}
-        onClick={() => inputRef.current?.click()}
-      >
-        <input ref={inputRef} type="file" className="hidden" onChange={handleChange} accept="image/*" />
-        
-        {/* Tech Grid Background */}
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:20px_20px]"></div>
-        
-        <div className="w-16 h-16 border border-gray-600 rounded-full flex items-center justify-center mb-4 group-hover:border-cinema-gold group-hover:shadow-[0_0_15px_rgba(255,215,0,0.3)] transition-all">
-          <span className="text-2xl text-gray-400 group-hover:text-cinema-gold">+</span>
+      <div className="w-full max-w-md mx-auto">
+        <div 
+          className={`relative h-64 md:h-80 flex flex-col items-center justify-center border-2 border-dashed rounded-xl transition-all duration-300 cursor-pointer overflow-hidden bg-cinema-800/50 border-gray-600 hover:border-cinema-gold hover:bg-cinema-800`}
+          onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+          onDrop={handleDrop}
+          onClick={() => inputRef.current?.click()}
+        >
+          <input 
+            ref={inputRef}
+            type="file" 
+            className="hidden" 
+            onChange={handleChange}
+            accept="image/*"
+          />
+          <div className="text-center p-6">
+            <div className="w-16 h-16 mb-4 mx-auto rounded-full bg-cinema-700 flex items-center justify-center">
+              <span className="text-3xl text-gray-300">+</span>
+            </div>
+            <p className="text-lg font-medium text-white mb-2">点击或拖拽上传照片</p>
+            <p className="text-sm text-gray-400">支持 JPG, PNG (请确保五官清晰)</p>
+          </div>
         </div>
-        <p className="text-sm font-tech font-bold text-gray-300 tracking-wider">INITIATE UPLOAD</p>
-        <p className="text-xs text-gray-500 mt-1 font-mono">DRAG & DROP OR CLICK</p>
       </div>
     );
   }
 
+  // 2. Edit/Crop State
   if (isEditing) {
     return (
-      <div className="animate-fade-in">
-        <div className="flex justify-between items-center mb-2">
-          <span className="text-xs font-mono text-cinema-gold">ADJUST TARGET</span>
-          <button onClick={handleReset} className="text-[10px] text-gray-500 hover:text-white uppercase tracking-wider">Cancel</button>
-        </div>
+      <div className="w-full max-w-md mx-auto animate-fade-in">
+        <h4 className="text-white text-sm mb-2 font-medium flex justify-between">
+          <span>调整照片位置与大小</span>
+          <button onClick={handleReset} className="text-gray-400 hover:text-white text-xs underline">取消</button>
+        </h4>
         
+        {/* Editor Container */}
         <div 
           ref={containerRef}
-          className="relative w-full aspect-square bg-black overflow-hidden rounded border border-gray-700 cursor-move"
-          onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}
-          onTouchStart={handleMouseDown} onTouchMove={handleMouseMove} onTouchEnd={handleMouseUp}
+          className="relative w-full aspect-square bg-black overflow-hidden rounded-lg cursor-move border border-cinema-700 touch-none"
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+          onTouchStart={handleMouseDown}
+          onTouchMove={handleMouseMove}
+          onTouchEnd={handleMouseUp}
+          style={{ touchAction: 'none' }} // Crucial for preventing scrolling while dragging
         >
-          {/* HUD Overlay */}
-          <div className="absolute inset-0 pointer-events-none z-10 border border-white/10 m-2">
-            <div className="absolute top-1/2 left-0 w-full h-[1px] bg-cinema-accent/30"></div>
-            <div className="absolute left-1/2 top-0 h-full w-[1px] bg-cinema-accent/30"></div>
-            {/* Corners */}
-            <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-cinema-accent"></div>
-            <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-cinema-accent"></div>
-            <div className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-cinema-accent"></div>
-            <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-cinema-accent"></div>
+          {/* Grid Overlay */}
+          <div className="absolute inset-0 pointer-events-none z-10 opacity-30">
+            <div className="w-full h-1/3 border-b border-white/50 absolute top-0"></div>
+            <div className="w-full h-1/3 border-b border-white/50 absolute bottom-0"></div>
+            <div className="h-full w-1/3 border-r border-white/50 absolute left-0"></div>
+            <div className="h-full w-1/3 border-r border-white/50 absolute right-0"></div>
           </div>
 
           <img 
             ref={imageRef}
             src={imageSrc} 
-            className="absolute max-w-none origin-center select-none opacity-80"
-            style={{ width: '100%', transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})` }}
+            alt="To Crop"
+            className="absolute max-w-none select-none"
+            style={{
+              width: '100%', // Visual width is 100% of container
+              // Center the image first using top/left 50% and translate(-50%, -50%)
+              top: '50%',
+              left: '50%',
+              // Combine centering with user offset and scale
+              // Note: The order of CSS transforms matches our Canvas logic conceptually
+              transform: `translate(calc(-50% + ${offset.x}px), calc(-50% + ${offset.y}px)) scale(${scale})`,
+            }}
             draggable={false}
           />
         </div>
 
-        <div className="mt-4 flex items-center gap-3 bg-black/40 p-2 rounded-lg border border-white/5">
-           <span className="text-[10px] font-mono text-gray-500">ZOOM</span>
+        {/* Controls */}
+        <div className="mt-4 flex items-center gap-4">
+           <span className="text-xs text-gray-400">缩放</span>
            <input 
-             type="range" min="1" max="3" step="0.1" 
-             value={scale} onChange={(e) => setScale(parseFloat(e.target.value))}
-             className="w-full h-1 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-cinema-gold"
+             type="range" 
+             min="1" 
+             max="3" 
+             step="0.05" 
+             value={scale}
+             onChange={(e) => setScale(parseFloat(e.target.value))}
+             className="w-full h-1 bg-cinema-700 rounded-lg appearance-none cursor-pointer accent-cinema-gold"
            />
         </div>
 
         <button 
           onClick={generateCrop}
-          className="mt-4 w-full py-3 bg-white/10 border border-white/10 text-white font-tech font-bold tracking-wider text-sm rounded hover:bg-white/20 hover:border-white/30 transition-all"
+          className="mt-6 w-full py-3 bg-cinema-gold text-black font-bold rounded hover:bg-yellow-500 transition-colors shadow-lg shadow-cinema-gold/20"
         >
-          CONFIRM CROP
+          确认裁剪 (OK)
         </button>
       </div>
     );
   }
 
+  // 3. Preview State (Confirmed)
   return (
-    <div className="animate-fade-in">
-       <div className="relative w-full aspect-square rounded-xl overflow-hidden border border-cinema-gold shadow-[0_0_20px_rgba(255,215,0,0.1)] group">
-         <img src={confirmedPreview!} className="w-full h-full object-cover" />
+    <div className="w-full max-w-md mx-auto animate-fade-in">
+       <div className="relative w-full aspect-square rounded-xl overflow-hidden border border-cinema-gold shadow-lg shadow-cinema-gold/10 group bg-black">
+         <img src={confirmedPreview!} alt="Confirmed" className="w-full h-full object-contain" />
          
-         {/* Scanning Animation overlay */}
-         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-cinema-gold/10 to-transparent h-[10%] w-full animate-scan pointer-events-none"></div>
-
-         <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3 backdrop-blur-sm">
-           <button onClick={() => setIsEditing(true)} className="px-5 py-2 bg-white text-black text-xs font-bold font-tech tracking-wider rounded-sm hover:scale-105 transition-transform">
-             READJUST
+         <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3">
+           <button 
+             onClick={() => {
+               setIsEditing(true);
+             }}
+             className="px-5 py-2 bg-white text-black text-sm font-bold rounded-full hover:bg-gray-200"
+           >
+             重新调整
            </button>
-           <button onClick={handleReset} className="px-5 py-2 border border-white text-white text-xs font-bold font-tech tracking-wider rounded-sm hover:bg-white/10">
-             NEW UPLOAD
+           <button 
+             onClick={handleReset}
+             className="px-5 py-2 bg-transparent border border-white text-white text-sm font-bold rounded-full hover:bg-white/10"
+           >
+             更换照片
            </button>
          </div>
        </div>
-       <div className="mt-3 flex items-center justify-center gap-2 text-cinema-gold/80 text-xs font-mono">
-          <span className="w-1.5 h-1.5 bg-cinema-gold rounded-full animate-pulse"></span>
-          SUBJECT LOCKED
-       </div>
+       <p className="text-center mt-3 text-green-400 text-sm flex items-center justify-center gap-1 font-medium">
+          <span className="bg-green-500/20 text-green-400 rounded-full w-5 h-5 flex items-center justify-center text-xs">✓</span> 
+          照片已就绪
+       </p>
     </div>
   );
 };
