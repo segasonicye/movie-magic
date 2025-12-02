@@ -3,7 +3,150 @@
 import { MovieScene } from './types';
 
 export const MOVIE_SCENES: MovieScene[] = [
-  // --- Game (保留现有的游戏分类) ---
+  // --- Top Requested Classics (Placed at top for visibility) ---
+  {
+    id: 'titanic',
+    title: '泰坦尼克号 (Titanic)',
+    year: '1997',
+    description: '永不沉没的巨轮，夕阳下的船头，跨越阶级的爱恋。',
+    prompt: 'Iconic movie poster shot for Titanic. The bow of the ship at sunset.',
+    category: 'classic', // Keep as Romance for the filter, but it's at the top of All now
+    previewColor: 'from-blue-900 to-orange-400',
+    previewImage: 'https://images.unsplash.com/photo-1500077423678-25eead48513a?q=80&w=400',
+    roles: [
+      {
+        id: 'jack_role',
+        name: 'Jack (The Artist)',
+        description: '穷画家，站在Rose身后，扶着她的腰，在船头迎风飞翔。',
+        prompt: 'The character is the USER cosplaying as Jack Dawson. \n\nIDENTITY:\n- Keep user\'s face.\n- Wearing suspenders and a white shirt.\n\nACTION:\n- Standing BEHIND Rose at the bow of the ship. Arms wrapped around her waist or holding her arms up. \n- The user is the protector/lover in the back. \n- Sunset lighting, golden hour, romantic emotional expression.',
+        previewImage: 'https://images.unsplash.com/photo-1500077423678-25eead48513a?q=80&w=400'
+      },
+      {
+        id: 'rose_role',
+        name: 'Rose (The Lady)',
+        description: '贵族少女，张开双臂，感受飞翔的自由。',
+        prompt: 'The character is the USER cosplaying as Rose. \n\nIDENTITY:\n- Keep user\'s face.\n- Wearing a period dress.\n\nACTION:\n- Standing at the bow of the ship, arms wide open "flying". \n- Jack is behind her (blurred or partial). \n- Wind blowing hair. Sunset lighting, pure joy and freedom.',
+        previewImage: 'https://images.unsplash.com/photo-1518382473168-a400a4007b81?q=80&w=400'
+      }
+    ]
+  },
+  {
+    id: 'shawshank',
+    title: '肖申克的救赎 (Shawshank)',
+    year: '1994',
+    description: '雷雨夜，张开双臂，拥抱自由。',
+    prompt: 'Iconic movie poster shot from The Shawshank Redemption. The character is Andy Dufresne. Shirtless, arms raised high to the sky in pouring rain. Lightning flash illuminating the scene. Expression of pure ecstasy and freedom. River/creek water around. Cinematic blue tones.',
+    category: 'classic', // Moved to Classic for better finding
+    previewColor: 'from-slate-800 to-blue-900',
+    previewImage: 'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?q=80&w=400'
+  },
+  {
+    id: 'forrest_gump',
+    title: '阿甘正传 (Forrest Gump)',
+    year: '1994',
+    description: '坐在长椅上，手拿巧克力盒，人生就像一盒巧克力。',
+    prompt: 'Iconic movie poster shot from Forrest Gump. The character is sitting on a park bench. Wearing a light beige suit and checkered shirt. A suitcase and a box of chocolates next to them. White feather floating (optional). Friendly, innocent expression. Savannah bus stop background.',
+    category: 'classic', // Moved to Classic
+    previewColor: 'from-sky-300 to-green-300',
+    previewImage: 'https://images.unsplash.com/photo-1505537385966-267323878b27?q=80&w=400'
+  },
+  {
+    id: 'roman_holiday',
+    title: '罗马假日 (Roman Holiday)',
+    year: '1953',
+    description: '骑着Vespa摩托车穿梭在罗马街头，短暂而永恒的爱情。',
+    prompt: 'Iconic movie poster shot from Roman Holiday. Black and white film style. User on a Vespa.',
+    category: 'romance',
+    previewColor: 'from-gray-400 to-gray-200',
+    previewImage: 'https://images.unsplash.com/photo-1520106212299-d99c443e4568?q=80&w=400',
+    styleKeywords: 'Classic 1950s Hollywood, Black and White, vintage aesthetics, joyous atmosphere.',
+    roles: [
+      {
+        id: 'joe',
+        name: '乔 (Joe - Reporter)',
+        description: '穿着西装，骑着Vespa摩托车，潇洒帅气。',
+        prompt: 'The character is Joe Bradley (Gregory Peck style). Wearing a 50s suit. Riding a vintage Vespa scooter. Roman Colosseum in background. Black and White photography. Charming, handsome.',
+        previewImage: 'https://images.unsplash.com/photo-1520106212299-d99c443e4568?q=80&w=400'
+      },
+      {
+        id: 'ann',
+        name: '安妮公主 (Princess Ann)',
+        description: '白衬衫，长裙，坐在摩托车后座或驾驶，俏皮可爱。',
+        prompt: 'The character is Princess Ann (Audrey Hepburn style). Wearing a white blouse and circle skirt. Riding a vintage Vespa scooter. Roman streets background. Black and White photography. Elegant, happy.',
+        previewImage: 'https://images.unsplash.com/photo-1490334800361-92b1a62961d3?q=80&w=400'
+      }
+    ]
+  },
+  {
+    id: 'godfather',
+    title: '教父 (The Godfather)',
+    year: '1972',
+    description: '黑礼服，红玫瑰，不仅是黑帮，更是家族的责任。',
+    prompt: 'Iconic movie poster shot from The Godfather. The character is Don Corleone. Wearing a black tuxedo with a red rose on the lapel. Sitting in a dark room. Dramatic top-down lighting (Marlon Brando style). Holding a cat (optional). Serious, powerful, iconic shadow over eyes.',
+    category: 'classic',
+    previewColor: 'from-black to-red-900',
+    previewImage: 'https://images.unsplash.com/photo-1533613220915-609f661a6fe1?q=80&w=400',
+    styleKeywords: 'Chiaroscuro lighting, dark shadows, golden hues, vintage film grain.'
+  },
+
+  // --- Animation ---
+  {
+    id: 'spirited_away',
+    title: '千与千寻 (Spirited Away)',
+    year: '2001',
+    description: '海上列车，无脸男，寻找回家的路。',
+    prompt: 'Iconic movie poster shot from Spirited Away. The character is sitting on the red velvet seat of a train moving through the ocean. Outside the window is endless blue water and sky. A semi-transparent shadow spirit (No Face) sits nearby. Studio Ghibli style, hand-drawn anime aesthetic, vibrant colors, nostalgic.',
+    category: 'animation',
+    previewColor: 'from-blue-400 to-cyan-200',
+    previewImage: 'https://images.unsplash.com/photo-1516738981173-ca740d753294?q=80&w=400',
+    styleKeywords: 'Studio Ghibli style, cel shaded, hand painted background, anime realism.'
+  },
+  {
+    id: 'spider_verse',
+    title: '蜘蛛侠：平行宇宙 (Spider-Verse)',
+    year: '2018',
+    description: '信仰之跃，倒吊下坠，每个人都是蜘蛛侠。',
+    prompt: 'Iconic movie poster shot from Spider-Man: Into the Spider-Verse. The character is wearing a Spider-Man suit with a hoodie and shorts (Miles Morales style) and sneakers. Falling UPSIDE DOWN towards the city skyline. Glass shattering. Comic book halftone dots (Ben-Day dots), chromatic aberration, graffiti neon aesthetic.',
+    category: 'animation',
+    previewColor: 'from-red-600 to-purple-600',
+    previewImage: 'https://images.unsplash.com/photo-1535905557558-afc4877a26fc?q=80&w=400',
+    styleKeywords: 'Comic book style, halftone dots, chromatic aberration, vibrant neon, stylized 3D.'
+  },
+  {
+    id: 'frozen',
+    title: '冰雪奇缘 (Frozen)',
+    year: '2013',
+    description: '随它吧，冰雪女王的魔法时刻。',
+    prompt: 'Iconic movie poster shot from Frozen. The character is cosplaying as Elsa the Snow Queen. Wearing a sparkling blue crystalline dress. Standing on an ice balcony, hands raised creating magical snow swirls and fractals. Disney 3D animation style, glowing blue lighting, magical atmosphere.',
+    category: 'animation',
+    previewColor: 'from-cyan-400 to-blue-600',
+    previewImage: 'https://images.unsplash.com/photo-1548263594-a71ea65a85b2?q=80&w=400',
+    styleKeywords: 'Disney 3D animation style, subsurface scattering, magical glow, ice particles, perfect lighting.'
+  },
+  {
+    id: 'your_name',
+    title: '你的名字 (Your Name)',
+    year: '2016',
+    description: '黄昏之时，阶梯上的相遇，穿越时空的羁绊。',
+    prompt: 'Iconic movie poster shot from Your Name (Kimi no Na wa). The character is standing on the iconic red railing stairs in Tokyo. Looking back over their shoulder. Sunset "Magic Hour" lighting with lens flares. Makoto Shinkai style clouds (hyper-detailed). Emotional, romantic.',
+    category: 'animation',
+    previewColor: 'from-indigo-500 to-pink-400',
+    previewImage: 'https://images.unsplash.com/photo-1500964757637-c85e8a162699?q=80&w=400',
+    styleKeywords: 'Makoto Shinkai style, hyper-realistic backgrounds, lens flares, vibrant sunset colors, emotional anime.'
+  },
+  {
+    id: 'arcane',
+    title: '双城之战 (Arcane)',
+    year: '2021',
+    description: '皮尔特沃夫与祖安，金克丝的疯狂与悲伤。',
+    prompt: 'Iconic poster shot from Arcane (League of Legends). The character is Jinx style (blue braids, tattoos) or Vi style (red jacket, gauntlets). Standing in a neon-lit Zaun alleyway or on the bridge. Fortiche production style (2.5D painted texture). Gritty, artistic, dramatic lighting.',
+    category: 'animation',
+    previewColor: 'from-fuchsia-700 to-blue-900',
+    previewImage: 'https://images.unsplash.com/photo-1620553750892-71eb20253457?q=80&w=400',
+    styleKeywords: 'Arcane style, painted textures, sharp brushstrokes, steampunk/cyberpunk aesthetic, dramatic neon lighting.'
+  },
+
+  // --- Game ---
   {
     id: 'god_of_war',
     title: '战神 (God of War)',
@@ -144,7 +287,7 @@ export const MOVIE_SCENES: MovieScene[] = [
     ]
   },
 
-  // --- Chinese Classics (Restored) ---
+  // --- Chinese Classics ---
   {
     id: 'crouching_tiger',
     title: '卧虎藏龙 (Crouching Tiger)',
@@ -222,81 +365,7 @@ export const MOVIE_SCENES: MovieScene[] = [
     useChineseTitle: true
   },
 
-  // --- Hollywood Classics (Restored) ---
-  {
-    id: 'titanic',
-    title: '泰坦尼克号 (Titanic)',
-    year: '1997',
-    description: '永不沉没的巨轮，夕阳下的船头，跨越阶级的爱恋。',
-    prompt: 'Iconic movie poster shot for Titanic. The bow of the ship at sunset.',
-    category: 'romance',
-    previewColor: 'from-blue-900 to-orange-400',
-    previewImage: 'https://images.unsplash.com/photo-1500077423678-25eead48513a?q=80&w=400',
-    roles: [
-      {
-        id: 'jack_role',
-        name: 'Jack (The Artist)',
-        description: '穷画家，站在Rose身后，扶着她的腰，在船头迎风飞翔。',
-        prompt: 'The character is the USER cosplaying as Jack Dawson. \n\nIDENTITY:\n- Keep user\'s face.\n- Wearing suspenders and a white shirt.\n\nACTION:\n- Standing BEHIND Rose at the bow of the ship. Arms wrapped around her waist or holding her arms up. \n- The user is the protector/lover in the back. \n- Sunset lighting, golden hour, romantic emotional expression.',
-        previewImage: 'https://images.unsplash.com/photo-1500077423678-25eead48513a?q=80&w=400'
-      },
-      {
-        id: 'rose_role',
-        name: 'Rose (The Lady)',
-        description: '贵族少女，张开双臂，感受飞翔的自由。',
-        prompt: 'The character is the USER cosplaying as Rose. \n\nIDENTITY:\n- Keep user\'s face.\n- Wearing a period dress.\n\nACTION:\n- Standing at the bow of the ship, arms wide open "flying". \n- Jack is behind her (blurred or partial). \n- Wind blowing hair. Sunset lighting, pure joy and freedom.',
-        previewImage: 'https://images.unsplash.com/photo-1518382473168-a400a4007b81?q=80&w=400'
-      }
-    ]
-  },
-  {
-    id: 'roman_holiday',
-    title: '罗马假日 (Roman Holiday)',
-    year: '1953',
-    description: '骑着Vespa摩托车穿梭在罗马街头，短暂而永恒的爱情。',
-    prompt: 'Iconic movie poster shot from Roman Holiday. Black and white film style. User on a Vespa.',
-    category: 'romance',
-    previewColor: 'from-gray-400 to-gray-200',
-    previewImage: 'https://images.unsplash.com/photo-1520106212299-d99c443e4568?q=80&w=400',
-    styleKeywords: 'Classic 1950s Hollywood, Black and White, vintage aesthetics, joyous atmosphere.',
-    roles: [
-      {
-        id: 'joe',
-        name: '乔 (Joe - Reporter)',
-        description: '穿着西装，骑着Vespa摩托车，潇洒帅气。',
-        prompt: 'The character is Joe Bradley (Gregory Peck style). Wearing a 50s suit. Riding a vintage Vespa scooter. Roman Colosseum in background. Black and White photography. Charming, handsome.',
-        previewImage: 'https://images.unsplash.com/photo-1520106212299-d99c443e4568?q=80&w=400'
-      },
-      {
-        id: 'ann',
-        name: '安妮公主 (Princess Ann)',
-        description: '白衬衫，长裙，坐在摩托车后座或驾驶，俏皮可爱。',
-        prompt: 'The character is Princess Ann (Audrey Hepburn style). Wearing a white blouse and circle skirt. Riding a vintage Vespa scooter. Roman streets background. Black and White photography. Elegant, happy.',
-        previewImage: 'https://images.unsplash.com/photo-1490334800361-92b1a62961d3?q=80&w=400'
-      }
-    ]
-  },
-  {
-    id: 'godfather',
-    title: '教父 (The Godfather)',
-    year: '1972',
-    description: '黑礼服，红玫瑰，不仅是黑帮，更是家族的责任。',
-    prompt: 'Iconic movie poster shot from The Godfather. The character is Don Corleone. Wearing a black tuxedo with a red rose on the lapel. Sitting in a dark room. Dramatic top-down lighting (Marlon Brando style). Holding a cat (optional). Serious, powerful, iconic shadow over eyes.',
-    category: 'classic',
-    previewColor: 'from-black to-red-900',
-    previewImage: 'https://images.unsplash.com/photo-1533613220915-609f661a6fe1?q=80&w=400',
-    styleKeywords: 'Chiaroscuro lighting, dark shadows, golden hues, vintage film grain.'
-  },
-  {
-    id: 'shawshank',
-    title: '肖申克的救赎 (Shawshank)',
-    year: '1994',
-    description: '雷雨夜，张开双臂，拥抱自由。',
-    prompt: 'Iconic movie poster shot from The Shawshank Redemption. The character is Andy Dufresne. Shirtless, arms raised high to the sky in pouring rain. Lightning flash illuminating the scene. Expression of pure ecstasy and freedom. River/creek water around. Cinematic blue tones.',
-    category: 'drama',
-    previewColor: 'from-slate-800 to-blue-900',
-    previewImage: 'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?q=80&w=400'
-  },
+  // --- Other Classics ---
   {
     id: 'pulp_fiction',
     title: '低俗小说 (Pulp Fiction)',
@@ -306,16 +375,6 @@ export const MOVIE_SCENES: MovieScene[] = [
     category: 'classic',
     previewColor: 'from-yellow-600 to-red-600',
     previewImage: 'https://images.unsplash.com/photo-1560419015-7c427e8ae5ba?q=80&w=400'
-  },
-  {
-    id: 'forrest_gump',
-    title: '阿甘正传 (Forrest Gump)',
-    year: '1994',
-    description: '坐在长椅上，手拿巧克力盒，人生就像一盒巧克力。',
-    prompt: 'Iconic movie poster shot from Forrest Gump. The character is sitting on a park bench. Wearing a light beige suit and checkered shirt. A suitcase and a box of chocolates next to them. White feather floating (optional). Friendly, innocent expression. Savannah bus stop background.',
-    category: 'drama',
-    previewColor: 'from-sky-300 to-green-300',
-    previewImage: 'https://images.unsplash.com/photo-1505537385966-267323878b27?q=80&w=400'
   },
   {
     id: 'truman_show',
@@ -338,7 +397,7 @@ export const MOVIE_SCENES: MovieScene[] = [
     previewImage: 'https://images.unsplash.com/photo-1440404653325-ab127d49abc1?q=80&w=400'
   },
   
-  // --- Sci-Fi & Blockbusters (Restored) ---
+  // --- Sci-Fi & Blockbusters ---
   {
     id: 'star_wars',
     title: '星球大战 (Star Wars)',
@@ -423,7 +482,7 @@ export const MOVIE_SCENES: MovieScene[] = [
     previewImage: 'https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?q=80&w=400'
   },
 
-  // --- Action & Thrillers (Restored & New) ---
+  // --- Action & Thrillers ---
   {
     id: 'face_off',
     title: '夺面双雄 (Face/Off)',
@@ -432,7 +491,7 @@ export const MOVIE_SCENES: MovieScene[] = [
     prompt: 'Iconic movie poster shot for Face/Off. John Woo style action.',
     category: 'action',
     previewColor: 'from-slate-800 to-blue-900',
-    previewImage: 'https://images.unsplash.com/photo-1595590424283-b8f17842773f?q=80&w=400',
+    previewImage: 'https://images.unsplash.com/photo-1615873968403-89e068629265?q=80&w=400',
     styleKeywords: 'John Woo style, slow motion, doves, sparks, dual pistols, intense standoff, cinematic action.',
     roles: [
       {
@@ -440,7 +499,7 @@ export const MOVIE_SCENES: MovieScene[] = [
         name: 'Castor Troy (恶棍)',
         description: '身穿神父装或长风衣，手持黄金双枪，疯狂而邪魅。',
         prompt: 'The character is Castor Troy (Nicolas Cage style). \n\nIDENTITY:\n- User\'s face.\n- Maniacal, crazy expression (wide eyes, wild grin).\n\nOUTFIT:\n- Wearing a black priest outfit or a long stylized trench coat.\n\nACTION:\n- Holding dual golden pistols. Doves flying in the background. Sparks flying. Chaotic, intense.',
-        previewImage: 'https://images.unsplash.com/photo-1595590424283-b8f17842773f?q=80&w=400'
+        previewImage: 'https://images.unsplash.com/photo-1615873968403-89e068629265?q=80&w=400'
       },
       {
         id: 'sean_archer',
@@ -538,7 +597,7 @@ export const MOVIE_SCENES: MovieScene[] = [
     previewImage: 'https://images.unsplash.com/photo-1620002166946-444a95d7362d?q=80&w=400'
   },
 
-  // --- Fantasy (Restored) ---
+  // --- Fantasy ---
   {
     id: 'harry_potter',
     title: '哈利波特 (Harry Potter)',
@@ -605,7 +664,7 @@ export const MOVIE_SCENES: MovieScene[] = [
     styleKeywords: 'HBO epic fantasy, dark moody atmosphere, cold color grading, detailed medieval texture.'
   },
 
-  // --- Superheroes (Restored) ---
+  // --- Superheroes ---
   {
     id: 'avengers',
     title: '复仇者联盟 (The Avengers)',
