@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { MOVIE_SCENES } from '../constants';
 import { MovieScene, MovieRole } from '../types';
@@ -11,6 +12,7 @@ interface SceneSelectorProps {
 
 const CATEGORIES: { id: string; label: string }[] = [
   { id: 'all', label: '全部' },
+  { id: 'tv', label: '电视剧 (TV)' },
   { id: 'game', label: '游戏 (Game)' },
   { id: 'action', label: '动作 (Action)' },
   { id: 'scifi', label: '科幻 (Sci-Fi)' },

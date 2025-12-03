@@ -1,3 +1,4 @@
+
 export interface MovieRole {
   id: string;
   name: string;
@@ -12,7 +13,7 @@ export interface MovieScene {
   year: string;
   description: string; // Used for UI
   prompt: string; // Used for AI (Default if no role selected)
-  category: 'action' | 'romance' | 'scifi' | 'classic' | 'fantasy' | 'drama' | 'animation' | 'game';
+  category: 'action' | 'romance' | 'scifi' | 'classic' | 'fantasy' | 'drama' | 'animation' | 'game' | 'tv';
   previewColor: string;
   previewImage?: string; // New field for hover thumbnail
   styleKeywords?: string; // Specific visual style overrides (e.g. "Film Noir B&W")

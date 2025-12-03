@@ -57,7 +57,8 @@ export const generateMovieSceneImage = async (
       drama: "Masterpiece quality, realistic textures, moody lighting, shallow depth of field, cinematic storytelling, emotional gravity, raw photo style, natural lighting.",
       fantasy: "Masterpiece quality, ethereal lighting, magical particles, painterly textures, epic scale, vibrant colors, intricate details, subsurface scattering.",
       animation: "Masterpiece quality, vibrant saturated colors, bold lines, exaggerated lighting, illustrative style, 3D render perfection, studio lighting.",
-      game: "Masterpiece quality, cinematic game cinematics, unreal engine 5 render, high fidelity, stylized realism, dramatic lighting, detailed textures, ray tracing."
+      game: "Masterpiece quality, cinematic game cinematics, unreal engine 5 render, high fidelity, stylized realism, dramatic lighting, detailed textures, ray tracing.",
+      tv: "Masterpiece quality, cinematic TV promo style, dramatic character portraits, high fidelity, narrative lighting."
     };
 
     // Combine broad category style with specific scene style keywords if available
@@ -100,23 +101,23 @@ export const generateMovieSceneImage = async (
       ⚠️ CRITICAL PRIORITY: IDENTITY CLONING MODE ⚠️
       You must perform a "Digital Face Transplant" rather than a "Generation". 
       
-      1. 🧬 ABSOLUTE FACIAL GEOMETRY LOCK
+      1. 🧬 ABSOLUTE FACIAL GEOMETRY LOCK (THE USER)
          - **Do NOT change the face shape**: Keep the exact jawline width, chin shape, and cheekbone structure of the input user.
          - **Do NOT "Westernize" or "Beautify"**: If the user has specific ethnic features, monolid eyes, a flat nose bridge, or asymmetry, PRESERVE THEM EXACTLY.
-         - **Do NOT fix imperfections**: Moles, scars, acne, and skin texture are key to likeness. Keep them.
-         - **Eyes are Critical**: The shape of the eyes must match 100%. Do not make them larger or more "Disney-like" unless the style is Animation.
+         - **Eyes are Critical**: The shape of the eyes must match 100%.
+         - **Role Assignment**: The USER is playing the role of **${metadata?.roleName || 'the main character'}**. ONLY this character should have the user's face.
 
-      2. 💇 HAIRSTYLE PRESERVATION
+      2. 👥 CO-STAR RENDERING (THE OTHERS)
+         - If the prompt mentions other characters (e.g., Jack, Iron Man, Jesse Pinkman), **RENDER THEM WITH THEIR ORIGINAL MOVIE ACTOR LIKENESSES**.
+         - Do NOT put the user's face on everyone.
+         - Create a realistic interaction (looking at each other, standing back-to-back, etc.) typical of movie posters.
+
+      3. 💇 HAIRSTYLE PRESERVATION
          - **Keep User's Hair**: Unless the user is wearing a hat/helmet in the scene description, use the user's ACTUAL hair from the photo.
-         - **Hairline Fidelity**: Do not lower or perfect the hairline.
       
-      3. 🎭 EXPRESSION MAPPING
+      4. 🎭 EXPRESSION MAPPING
          - Map the *emotion* of the scene (e.g., fierce, scared, happy) onto the *user's* face.
          - Do NOT swap the face for a generic actor with that expression. Distort the USER'S muscles to show the emotion.
-
-      4. 🧱 REALISTIC TEXTURE (NO PLASTIC SKIN)
-         - Render individual skin pores and vellus hair.
-         - Ensure the lighting of the scene interacts with the skin's actual topography.
 
       5. SCENE INTEGRATION
          - ${titleInstruction}
@@ -124,8 +125,9 @@ export const generateMovieSceneImage = async (
          - Lighting: Dramatic, cinematic lighting that matches the scene description but hits the user's face naturally.
 
       QUALITY CHECK:
-      - If the output looks like a generic celebrity or stock photo model, IT IS A FAILURE.
-      - It must look EXACTLY like the input person, just in a costume.
+      - The User's character MUST look like the Input Photo.
+      - The Co-Stars MUST look like the original Movie Actors.
+      - It must look like a high-budget official poster.
     `;
 
     // Upgraded model for better quality and higher resolution
