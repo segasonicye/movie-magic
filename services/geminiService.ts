@@ -1,5 +1,3 @@
-
-
 import { GoogleGenAI } from "@google/genai";
 import { AspectRatio } from "../types";
 
@@ -31,6 +29,7 @@ interface SceneMetadata {
   styleKeywords?: string;
   useChineseTitle?: boolean;
   roleName?: string;
+  posterFont?: string;
 }
 
 /**
@@ -76,14 +75,18 @@ export const generateMovieSceneImage = async (
 
     // 3. Typography & Text Handling
     const isChineseTitle = metadata?.useChineseTitle;
-    const fontStyle = isChineseTitle 
+    const defaultFontStyle = isChineseTitle 
       ? "Chinese Calligraphy or stylized Chinese movie font suitable for the genre" 
       : "Large, cinematic font, professional typography";
     
+    // Use specific posterFont if provided, otherwise fallback to default
+    const fontInstruction = metadata?.posterFont ? metadata.posterFont : defaultFontStyle;
+
     const titleInstruction = metadata?.title
       ? `TITLE: The title "${metadata.title}" MUST be visible on the poster. 
          - Placement: Top or Bottom center (standard movie poster layout).
-         - Style: ${fontStyle} that matches the ${metadata.category} genre.
+         - Style: ${fontInstruction}
+         - Integration: The text should look like a real movie poster title (embossed, glowing, or textured).
          - Quality: Sharp, vector-like text.`
       : `TITLE: Create a dramatic title fitting for this scene.`;
 

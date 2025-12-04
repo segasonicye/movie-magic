@@ -5,22 +5,57 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>MovieMagic AI - 剧照生成器</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
     <script>
       tailwind.config = {
         theme: {
           extend: {
             fontFamily: {
-              sans: ['Inter', 'sans-serif'],
+              sans: ['"Share Tech Mono"', 'monospace'],
+              display: ['"Orbitron"', 'sans-serif'],
+              tech: ['"VT323"', 'monospace'],
+              mono: ['"Share Tech Mono"', 'monospace'],
+            },
+            animation: {
+              marquee: 'marquee 60s linear infinite',
+              'spin-slow': 'spin 4s linear infinite',
+              'pulse-fast': 'pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+              'flash': 'flash 2s infinite',
+              'scan': 'scan 3s linear infinite',
+              'flicker': 'flicker 0.15s ease-in-out 3', // Fast flicker 3 times
+            },
+            keyframes: {
+              marquee: {
+                '0%': { transform: 'translateX(0)' },
+                '100%': { transform: 'translateX(-50%)' },
+              },
+              flash: {
+                '0%, 100%': { opacity: '1' },
+                '50%': { opacity: '0' },
+              },
+              scan: {
+                '0%': { backgroundPosition: '0% 0%' },
+                '100%': { backgroundPosition: '0% 100%' },
+              },
+              flicker: {
+                '0%, 100%': { opacity: '1', filter: 'brightness(1)' },
+                '50%': { opacity: '0.3', filter: 'brightness(2)' },
+              }
             },
             colors: {
-              cinema: {
-                900: '#0f0f0f',
-                800: '#1a1a1a',
-                700: '#2a2a2a',
-                gold: '#d4af37',
-                red: '#e50914'
+              retro: {
+                bg: '#000000',       // True Black
+                panel: '#050a05',    // Very Dark Green
+                border: '#003300',   // Dark Green Border
+                gold: '#00ff41',     // MATRIX GREEN (Primary)
+                teal: '#cccccc',     // Terminal Silver (Secondary)
+                red: '#ff0000',      // System Error Red
+                surface: '#001100'   // Dark Green Surface
               }
+            },
+            backgroundImage: {
+              'grid-pattern': "linear-gradient(to right, #003300 1px, transparent 1px), linear-gradient(to bottom, #003300 1px, transparent 1px)",
+              'scanlines': "linear-gradient(to bottom, rgba(0, 255, 65, 0.03) 50%, rgba(0, 0, 0, 0.5) 50%)",
             }
           }
         }
@@ -28,21 +63,39 @@
     </script>
     <style>
       body {
-        background-color: #0f0f0f;
-        color: #ffffff;
+        background-color: #000000;
+        color: #00ff41;
+        font-family: 'Share Tech Mono', monospace;
       }
+      /* Terminal Scrollbar */
       .custom-scrollbar::-webkit-scrollbar {
-        width: 8px;
-      }
-      .custom-scrollbar::-webkit-scrollbar-track {
-        background: #1a1a1a;
+        width: 12px;
+        background: #000;
+        border-left: 1px solid #003300;
       }
       .custom-scrollbar::-webkit-scrollbar-thumb {
-        background: #2a2a2a;
-        border-radius: 4px;
+        background: #003300;
+        border: 1px solid #00ff41;
       }
       .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-        background: #d4af37;
+        background: #00ff41;
+      }
+      /* Scanline Overlay */
+      .screen-overlay {
+        background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+        background-size: 100% 2px, 3px 100%;
+        pointer-events: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        z-index: 9999;
+        opacity: 0.15;
+      }
+      ::selection {
+        background: #00ff41;
+        color: #000;
       }
     </style>
   <script type="importmap">
@@ -58,5 +111,6 @@
 </head>
   <body>
     <div id="root"></div>
+    <div class="screen-overlay"></div>
   </body>
 </html>

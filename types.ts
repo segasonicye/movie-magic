@@ -18,6 +18,7 @@ export interface MovieScene {
   previewImage?: string; // New field for hover thumbnail
   styleKeywords?: string; // Specific visual style overrides (e.g. "Film Noir B&W")
   useChineseTitle?: boolean; // If true, extracts the Chinese title instead of English for the poster
+  posterFont?: string; // Specific font style and color instruction for the poster title
   roles?: MovieRole[]; // Optional list of selectable roles
 }
 
