@@ -1,10 +1,13 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 
 interface ImageUploadProps {
   onImageSelected: (file: File | null) => void;
+  label?: string; // Label for the character name (e.g. "UPLOAD JACK")
+  compact?: boolean; // Smaller layout for multi-upload
+  initialImage?: File | null; // For maintaining state
 }
 
-const ImageUpload: React.FC<ImageUploadProps> = ({ onImageSelected }) => {
+const ImageUpload: React.FC<ImageUploadProps> = ({ onImageSelected, label = "Face Data", compact = false, initialImage }) => {
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [confirmedPreview, setConfirmedPreview] = useState<string | null>(null);
@@ -18,6 +21,14 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onImageSelected }) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Sync with external initialImage if provided (e.g. when switching scenes but keeping data)
+  useEffect(() => {
+    if (initialImage) {
+        // Logic to restore preview would go here, simplified for now to just allow re-upload
+        // Ideally we keep the preview URL in parent or regenerate it
+    }
+  }, [initialImage]);
 
   const handleFile = (file: File) => {
     if (!file.type.startsWith('image/')) return;
@@ -102,10 +113,12 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onImageSelected }) => {
   };
 
   // --- Render ---
+  const heightClass = compact ? 'h-32' : 'h-64';
+
   if (!imageSrc) {
     return (
       <div 
-        className="relative h-64 border border-dashed border-retro-border bg-black hover:bg-retro-panel hover:border-retro-gold transition-colors cursor-pointer group flex flex-col items-center justify-center overflow-hidden"
+        className={`relative ${heightClass} border border-dashed border-retro-border bg-black hover:bg-retro-panel hover:border-retro-gold transition-colors cursor-pointer group flex flex-col items-center justify-center overflow-hidden`}
         onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
         onDrop={handleDrop}
         onClick={() => inputRef.current?.click()}
@@ -116,12 +129,14 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onImageSelected }) => {
         <div className="absolute inset-0 bg-scanlines opacity-50 pointer-events-none"></div>
         <div className="absolute top-0 left-0 w-full h-1 bg-retro-gold animate-scan opacity-0 group-hover:opacity-100"></div>
 
-        <div className="text-center relative z-10">
-          <div className="w-12 h-12 border border-retro-gold rounded-full flex items-center justify-center mx-auto mb-4 text-retro-gold group-hover:bg-retro-gold group-hover:text-black transition-colors">
-            +
-          </div>
-          <p className="text-retro-gold font-mono text-sm tracking-widest uppercase mb-1">Upload Face Data</p>
-          <p className="text-retro-border text-xs font-mono">DRAG & DROP or CLICK</p>
+        <div className="text-center relative z-10 p-2">
+          {!compact && (
+            <div className="w-12 h-12 border border-retro-gold rounded-full flex items-center justify-center mx-auto mb-4 text-retro-gold group-hover:bg-retro-gold group-hover:text-black transition-colors">
+              +
+            </div>
+          )}
+          <p className="text-retro-gold font-mono text-sm tracking-widest uppercase mb-1">{label}</p>
+          <p className="text-retro-border text-[10px] font-mono">DRAG & DROP or CLICK</p>
         </div>
         
         {/* Corner Markers */}
@@ -135,9 +150,9 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onImageSelected }) => {
 
   if (isEditing) {
     return (
-      <div className="w-full animate-fade-in">
+      <div className="w-full animate-fade-in bg-black border border-retro-gold p-2">
         <div className="flex justify-between items-center mb-2">
-           <span className="text-retro-gold text-xs font-mono">CALIBRATE_IMAGE</span>
+           <span className="text-retro-gold text-xs font-mono">CALIBRATE: {label}</span>
            <button onClick={handleReset} className="text-retro-red text-xs hover:underline">[ CANCEL ]</button>
         </div>
         
@@ -185,9 +200,9 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onImageSelected }) => {
 
         <button 
           onClick={generateCrop}
-          className="mt-4 w-full py-2 bg-retro-gold text-black font-bold font-mono hover:bg-white"
+          className="mt-4 w-full py-2 bg-retro-gold text-black font-bold font-mono text-xs hover:bg-white"
         >
-          [ CONFIRM SCAN ]
+          [ CONFIRM ]
         </button>
       </div>
     );
@@ -202,7 +217,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onImageSelected }) => {
              RE-CALIBRATE
            </button>
            <button onClick={handleReset} className="px-4 py-1 border border-retro-red text-retro-red text-xs font-mono hover:bg-retro-red hover:text-black">
-             PURGE DATA
+             PURGE
            </button>
          </div>
          {/* Corner Brackets */}
@@ -211,8 +226,8 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onImageSelected }) => {
          <div className="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-retro-gold"></div>
          <div className="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-retro-gold"></div>
        </div>
-       <div className="mt-2 text-center text-retro-gold text-xs font-mono bg-retro-gold/10 py-1">
-         STATUS: BIOMETRIC_LOCKED
+       <div className="mt-1 text-center text-retro-gold text-[10px] font-mono bg-retro-gold/10 py-1 uppercase truncate">
+         {label}: LOCKED
        </div>
     </div>
   );

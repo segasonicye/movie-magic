@@ -31,6 +31,33 @@ export const MOVIE_SCENES: MovieScene[] = [
     ]
   },
   {
+    id: 'gone_with_the_wind',
+    title: '乱世佳人 (Gone with the Wind)',
+    year: '1939',
+    description: '塔拉庄园的夕阳，烈火中的誓言，瑞德与斯嘉丽。',
+    prompt: 'Iconic movie poster for Gone with the Wind. Oil painting style. Dramatic sunset and burning Atlanta in background. High drama and romance.',
+    category: 'classic',
+    previewColor: 'from-red-900 to-orange-600',
+    previewImage: 'https://images.unsplash.com/photo-1478131143081-80f7f84ca84d?q=80&w=400',
+    posterFont: 'Classic Serif font, Bold and Sweeping, Gold or Red with drop shadow.',
+    roles: [
+      {
+        id: 'scarlett',
+        name: 'Scarlett O\'Hara',
+        description: '斯嘉丽，绿色天鹅绒裙，倔强与美丽。',
+        prompt: 'Cosplay as Scarlett O\'Hara. Wearing the iconic green velvet curtain dress or a large period ballgown. Dramatic, passionate expression. Standing against a sunset or burning city background.',
+        previewImage: 'https://images.unsplash.com/photo-1549845373-c8a742918836?q=80&w=400'
+      },
+      {
+        id: 'rhett',
+        name: 'Rhett Butler',
+        description: '瑞德，深色礼服，迷人的坏笑。',
+        prompt: 'Cosplay as Rhett Butler. Wearing a vintage 1860s suit and cravat. Thin pencil moustache. Smirking confident expression. Holding a hat. Classic Hollywood lighting.',
+        previewImage: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=400'
+      }
+    ]
+  },
+  {
     id: 'shawshank',
     title: '肖申克的救赎 (Shawshank)',
     year: '1994',
@@ -329,10 +356,13 @@ export const MOVIE_SCENES: MovieScene[] = [
     category: 'action',
     previewColor: 'from-blue-700 to-red-600',
     previewImage: 'https://images.unsplash.com/photo-1531259683007-016a7b628fc3?q=80&w=400',
-    posterFont: 'AVENGERS Logo font, White with Arrow icon.',
+    posterFont: 'Bold sans-serif font, metallic texture, Avengers logo style',
     roles: [
       { id: 'iron_man', name: 'Iron Man', description: 'Mark VII装甲，掌心炮发射。', prompt: 'Cosplay as Iron Man (unmasked). Wearing high-tech red and gold armor. Hand raised firing repulsor beam. Debris background.', previewImage: 'https://images.unsplash.com/photo-1626278664285-f796b9ee7806?q=80&w=400' },
-      { id: 'cap', name: 'Captain America', description: '振金盾牌，星条旗战衣。', prompt: 'Cosplay as Captain America. Wearing blue tactical suit with star on chest. Holding round shield. Battle worn.', previewImage: 'https://images.unsplash.com/photo-1569003339405-ea396a5a8a90?q=80&w=400' }
+      { id: 'cap', name: 'Captain America', description: '振金盾牌，星条旗战衣。', prompt: 'Cosplay as Captain America. Wearing blue tactical suit with star on chest. Holding round shield. Battle worn.', previewImage: 'https://images.unsplash.com/photo-1569003339405-ea396a5a8a90?q=80&w=400' },
+      { id: 'thor', name: 'Thor', description: '雷神之锤，红色披风，召唤雷电。', prompt: 'Cosplay as Thor. Wearing Asgardian armor and red cape. Holding Mjolnir high summoning lightning. Stormy sky background.', previewImage: 'https://images.unsplash.com/photo-1534067783741-512d692f63e7?q=80&w=400' },
+      { id: 'black_widow', name: 'Black Widow', description: '黑色特工服，红发，双枪。', prompt: 'Cosplay as Black Widow. Wearing sleek black tactical suit. Red hair. Holding dual pistols or batons. Action pose. Urban destruction background.', previewImage: 'https://images.unsplash.com/photo-1518558997970-4ddc236affcd?q=80&w=400' },
+      { id: 'hawkeye', name: 'Hawkeye', description: '鹰眼，神射手，战术背心，弓箭。', prompt: 'Cosplay as Hawkeye (Clint Barton). Wearing tactical combat vest (purple and black). Holding a compound bow drawn back. Intense expression. Battle of New York background.', previewImage: 'https://images.unsplash.com/photo-1554188248-986adbb73be0?q=80&w=400' }
     ]
   },
   {

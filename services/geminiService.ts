@@ -30,13 +30,15 @@ interface SceneMetadata {
   useChineseTitle?: boolean;
   roleName?: string;
   posterFont?: string;
+  multiRoleMap?: Record<string, string>; // Maps "Role ID" to "Character Name"
 }
 
 /**
  * Generates the movie scene image using Gemini.
+ * Now accepts a record of images for multi-role support.
  */
 export const generateMovieSceneImage = async (
-  imageFile: File,
+  imageFiles: Record<string, File>,
   scenePrompt: string,
   aspectRatio: AspectRatio = '1:1',
   metadata?: SceneMetadata
@@ -45,7 +47,28 @@ export const generateMovieSceneImage = async (
     // Initialize AI client inside the function to ensure it uses the latest API Key
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-    const imagePart = await fileToGenerativePart(imageFile);
+    // Prepare content parts
+    const contentParts: any[] = [];
+    let identityPrompt = "";
+    
+    // Convert all images to generative parts and build identity mapping prompt
+    let index = 0;
+    const roleIds = Object.keys(imageFiles);
+    
+    for (const roleId of roleIds) {
+        const file = imageFiles[roleId];
+        const part = await fileToGenerativePart(file);
+        contentParts.push(part);
+        
+        const characterName = metadata?.multiRoleMap?.[roleId] || metadata?.roleName || "Main Character";
+        
+        identityPrompt += `
+        [IMAGE SOURCE ${index + 1}]:
+        - This image corresponds to the character role: "${characterName}".
+        - ACTION: Apply the face from Image ${index + 1} onto the body/costume of "${characterName}" in the scene.
+        `;
+        index++;
+    }
 
     // 1. Dynamic Category Styling
     const categoryStyles: Record<string, string> = {
@@ -93,75 +116,67 @@ export const generateMovieSceneImage = async (
     const fullPrompt = `
       [SYSTEM INSTRUCTION: EXPERT VFX SUPERVISOR & BIOMETRIC SPECIALIST]
       
-      GOAL: Generate a 2K resolution movie poster starring the person from the INPUT IMAGE.
+      GOAL: Generate a 2K resolution movie poster starring the person(s) from the INPUT IMAGE(S).
       
       SOURCE MATERIAL:
-      - **INPUT IMAGE IS GROUND TRUTH**: The face in the input image is the absolute reference.
+      - **INPUT IMAGES ARE GROUND TRUTH**: The faces provided are absolute references.
       - Target Scene: ${scenePrompt}
-      - Character Role: ${metadata?.roleName || 'Protagonist'}
       - Visual Style: ${specificStyle} | ${eraAesthetic}
+
+      ${identityPrompt}
 
       ⚠️ CRITICAL PRIORITY: IDENTITY CLONING MODE ⚠️
       You must perform a "Digital Face Transplant" rather than a "Generation". 
       
-      1. 🧬 ABSOLUTE FACIAL GEOMETRY LOCK (THE USER)
-         - **Do NOT change the face shape**: Keep the exact jawline width, chin shape, and cheekbone structure of the input user.
-         - **Do NOT "Westernize" or "Beautify"**: If the user has specific ethnic features, monolid eyes, a flat nose bridge, or asymmetry, PRESERVE THEM EXACTLY.
-         - **Eyes are Critical**: The shape of the eyes must match 100%.
-         - **Role Assignment**: The USER is playing the role of **${metadata?.roleName || 'the main character'}**. ONLY this character should have the user's face.
+      1. 🧬 ABSOLUTE FACIAL GEOMETRY LOCK
+         - **Do NOT change face shapes**: Keep exact jawline, chin, and cheekbone structures.
+         - **Do NOT "Westernize" or "Beautify"**: Preserve ethnic features, asymmetry, and skin imperfections.
+         - **Eyes**: The shape of the eyes must match 100%.
+         - **Gender**: Adapt the character's body/hair to match the USER'S gender if significantly different, UNLESS it breaks the scene's core iconicity.
 
-      2. 👥 CO-STAR RENDERING (THE OTHERS)
-         - If the prompt mentions other characters (e.g., Jack, Iron Man, Jesse Pinkman), **RENDER THEM WITH THEIR ORIGINAL MOVIE ACTOR LIKENESSES**.
-         - Do NOT put the user's face on everyone.
-         - Create a realistic interaction (looking at each other, standing back-to-back, etc.) typical of movie posters.
+      2. 💡 LIGHTING & TEXTURE MATCHING (CRITICAL)
+         - The face MUST react to the scene's lighting (e.g., if the scene is sunset, the face must have warm side-lighting).
+         - Avoid "floating head" effect. The skin tone and grain must match the body and environment perfectly.
+         - If the scene is dirty/gritty, apply dirt/sweat to the face to match.
 
-      3. 💇 HAIRSTYLE PRESERVATION
-         - **Keep User's Hair**: Unless the user is wearing a hat/helmet in the scene description, use the user's ACTUAL hair from the photo.
-      
-      4. 🎭 EXPRESSION MAPPING
-         - Map the *emotion* of the scene (e.g., fierce, scared, happy) onto the *user's* face.
-         - Do NOT swap the face for a generic actor with that expression. Distort the USER'S muscles to show the emotion.
-
-      5. SCENE INTEGRATION
+      3. 👥 MULTI-ROLE / CO-STAR RENDERING
+         - If multiple images are provided, map them EXACTLY as defined in [IMAGE SOURCE] sections.
+         - Ensure consistent artistic style across all characters.
+         
+      4. 🎞️ MOVIE POSTER COMPOSITION
          - ${titleInstruction}
-         - Composition: Professional movie poster layout.
-         - Lighting: Dramatic, cinematic lighting that matches the scene description but hits the user's face naturally.
-
-      QUALITY CHECK:
-      - The User's character MUST look like the Input Photo.
-      - The Co-Stars MUST look like the original Movie Actors.
-      - It must look like a high-budget official poster.
+         - Composition must be balanced and cinematic.
     `;
 
-    // Upgraded model for better quality and higher resolution
-    const model = 'gemini-3-pro-image-preview';
+    // Add text prompt to content parts
+    contentParts.push({ text: fullPrompt });
 
+    // Call Gemini API
     const response = await ai.models.generateContent({
-      model: model,
+      model: 'gemini-3-pro-image-preview',
       contents: {
-        parts: [
-            imagePart,
-            { text: fullPrompt }
-        ]
+        parts: contentParts
       },
       config: {
-        imageConfig: { 
+        imageConfig: {
           aspectRatio: aspectRatio,
-          imageSize: '2K' 
+          imageSize: '2K'
         }
       }
     });
 
-    if (response.candidates && response.candidates[0].content && response.candidates[0].content.parts) {
+    // Extract image from response
+    if (response.candidates && response.candidates.length > 0) {
       for (const part of response.candidates[0].content.parts) {
         if (part.inlineData) {
-            const base64EncodeString = part.inlineData.data;
-            return `data:image/png;base64,${base64EncodeString}`;
+          const base64Data = part.inlineData.data;
+          const mimeType = part.inlineData.mimeType || 'image/png';
+          return `data:${mimeType};base64,${base64Data}`;
         }
       }
     }
 
-    throw new Error("No image generated.");
+    throw new Error("No image generated by the model.");
 
   } catch (error) {
     console.error("Gemini API Error:", error);

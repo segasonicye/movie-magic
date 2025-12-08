@@ -7,9 +7,13 @@ import { MovieScene, MovieRole, AspectRatio } from './types';
 
 const App: React.FC = () => {
   const [hasApiKey, setHasApiKey] = useState(false);
-  const [userImage, setUserImage] = useState<File | null>(null);
+  
+  // Replaced single userImage with a map of images (roleId -> File)
+  // 'default' key is used for single-role scenes
+  const [roleImages, setRoleImages] = useState<Record<string, File>>({});
+  
   const [selectedScene, setSelectedScene] = useState<MovieScene | null>(null);
-  const [selectedRole, setSelectedRole] = useState<MovieRole | null>(null);
+  const [selectedRole, setSelectedRole] = useState<MovieRole | null>(null); // Still used for preview focus
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>('16:9');
   
   const [generationState, setGenerationState] = useState<{
@@ -65,23 +69,61 @@ const App: React.FC = () => {
     return scene.title;
   };
 
+  const handleImageUpload = (file: File | null, roleId: string = 'default') => {
+    setRoleImages(prev => {
+      const newMap = { ...prev };
+      if (file) {
+        newMap[roleId] = file;
+      } else {
+        delete newMap[roleId];
+      }
+      return newMap;
+    });
+  };
+
   const handleGenerate = async () => {
-    if (!userImage) return;
+    // Check if we have at least one image
+    const imageKeys = Object.keys(roleImages);
+    if (imageKeys.length === 0) return;
     
     let promptToUse = '';
     let titleToUse = '';
-    let metadata = { title: '', year: '', category: '', styleKeywords: '', useChineseTitle: false, roleName: '', posterFont: '' };
+    let metadata: any = { 
+      title: '', year: '', category: '', styleKeywords: '', 
+      useChineseTitle: false, roleName: '', posterFont: '',
+      multiRoleMap: {} 
+    };
 
     if (selectedScene) {
-      promptToUse = selectedRole ? selectedRole.prompt : selectedScene.prompt;
+      // Logic for multi-role prompting
+      if (selectedScene.roles && selectedScene.roles.length > 0) {
+        // Construct a prompt that describes ALL roles
+        promptToUse = selectedScene.prompt; // Base prompt usually describes the whole scene
+        
+        // However, if we only uploaded for ONE specific role (and not all), maybe we should specific focus?
+        // Actually, the service now handles mapping. We just send the images we have.
+        // We need to tell the service which Role ID maps to which Character Name
+        const roleMap: Record<string, string> = {};
+        selectedScene.roles.forEach(r => {
+           roleMap[r.id] = r.name;
+           // Append specific role prompts to base prompt to ensure detail
+           promptToUse += ` ${r.prompt}`;
+        });
+        metadata.multiRoleMap = roleMap;
+      } else {
+        // Single role / Generic scene
+        promptToUse = selectedScene.prompt;
+      }
+
       titleToUse = getPosterTitle(selectedScene) || selectedScene.title;
       metadata = {
+        ...metadata,
         title: titleToUse,
         year: selectedScene.year,
         category: selectedScene.category,
         styleKeywords: selectedScene.styleKeywords || '',
         useChineseTitle: selectedScene.useChineseTitle || false,
-        roleName: selectedRole ? selectedRole.name : '',
+        roleName: selectedRole ? selectedRole.name : '', // Fallback
         posterFont: selectedScene.posterFont || ''
       };
     } else {
@@ -92,7 +134,8 @@ const App: React.FC = () => {
     setGenerationState({ loading: true, result: null, error: null });
 
     try {
-      const generatedImageUrl = await generateMovieSceneImage(userImage, promptToUse, aspectRatio, metadata);
+      // Pass the whole map of images
+      const generatedImageUrl = await generateMovieSceneImage(roleImages, promptToUse, aspectRatio, metadata);
       setGenerationState({ loading: false, result: generatedImageUrl, error: null });
     } catch (err: any) {
       console.error(err);
@@ -118,14 +161,18 @@ const App: React.FC = () => {
   };
 
   const hasRoles = selectedScene?.roles && selectedScene.roles.length > 0;
-  const isGenerateDisabled = !userImage || !selectedScene || (hasRoles && !selectedRole);
+  
+  // Validation: At least one image must be uploaded
+  const hasUploadedImages = Object.keys(roleImages).length > 0;
+  const isGenerateDisabled = !hasUploadedImages || !selectedScene;
+  
   const showInputUI = !generationState.loading && !generationState.result;
   const resultTitle = getPosterTitle(selectedScene);
 
   const getButtonText = () => {
-    if (!userImage) return "[ WAITING FOR BIOMETRIC DATA ]";
     if (!selectedScene) return "[ SELECT TARGET SIMULATION ]";
-    if (hasRoles && !selectedRole) return "[ SELECT IDENTITY ]";
+    if (!hasUploadedImages) return "[ UPLOAD BIOMETRIC DATA ]";
+    if (hasRoles) return ">> INITIALIZE ENSEMBLE RENDER <<";
     return ">> INITIALIZE NEURAL RENDER <<";
   };
 
@@ -207,14 +254,43 @@ const App: React.FC = () => {
           
           <div className={showInputUI ? 'contents' : 'hidden'}>
             
-            {/* Left Column - Image Upload & Ratio - ORDER-1 on Mobile to be TOP */}
-            <div className="w-full lg:w-1/3 flex flex-col gap-6 order-1">
-               {/* Step 1: Upload Panel */}
+            {/* STEP 1: Scene Selection (Top on Mobile, Left on Desktop) */}
+            <div className={`w-full lg:w-2/3`}>
+               <section className="bg-black border border-retro-gold h-full flex flex-col">
+                <div className="bg-retro-gold/10 p-2 border-b border-retro-gold flex justify-between items-center">
+                   <h3 className="text-sm font-bold text-retro-gold font-mono uppercase">
+                     01 // DATABASE_ACCESS
+                   </h3>
+                   {selectedScene && (
+                      <div className="text-xs text-black bg-retro-gold px-2 font-mono">
+                        SELECTED: {selectedScene.id.toUpperCase()}
+                      </div>
+                    )}
+                </div>
+                
+                <div className="p-4 flex-1">
+                  <SceneSelector 
+                    selectedSceneId={selectedScene?.id || null} 
+                    selectedRole={selectedRole}
+                    onSceneSelect={(scene) => {
+                      setSelectedScene(scene);
+                      setSelectedRole(null); 
+                      // Note: We keep roleImages state so users can switch scenes freely
+                    }}
+                    onRoleSelect={(role) => setSelectedRole(role)}
+                  />
+                </div>
+              </section>
+            </div>
+
+            {/* STEP 2: Image Upload & Config (Bottom on Mobile, Right on Desktop) */}
+            <div className="w-full lg:w-1/3 flex flex-col gap-6">
+               {/* Upload Panel */}
               <section className="bg-black border border-retro-gold relative shadow-[0_0_10px_rgba(0,255,65,0.1)]">
                 {/* Header */}
                 <div className="bg-retro-gold/10 p-2 border-b border-retro-gold flex justify-between items-center">
                    <h3 className="text-sm font-bold text-retro-gold font-mono uppercase">
-                     01 // INPUT_SOURCE
+                     02 // INPUT_SOURCE
                    </h3>
                    <div className="flex gap-1">
                      <div className="w-1 h-1 bg-retro-gold"></div>
@@ -223,14 +299,41 @@ const App: React.FC = () => {
                    </div>
                 </div>
 
-                <div className="p-4 relative">
+                <div className="p-4 relative space-y-4">
                   <div className="absolute top-0 right-0 p-1 text-[10px] text-retro-border">SECURE_CONNECTION</div>
-                  <ImageUpload onImageSelected={setUserImage} />
+                  
+                  {/* Dynamic Upload Grid based on Scene Roles */}
+                  {selectedScene && selectedScene.roles && selectedScene.roles.length > 0 ? (
+                    <>
+                      <div className="text-xs text-retro-teal mb-2 font-mono border-b border-retro-teal/30 pb-2">
+                        [ MULTI-IDENTITY DETECTED ]<br/>
+                        Upload faces for specific roles. Leave blank to use original actor.
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        {selectedScene.roles.map(role => (
+                           <div key={role.id} className="flex flex-col">
+                             <ImageUpload 
+                               label={role.name.toUpperCase()} 
+                               compact={true}
+                               initialImage={roleImages[role.id]}
+                               onImageSelected={(file) => handleImageUpload(file, role.id)} 
+                             />
+                           </div>
+                        ))}
+                      </div>
+                    </>
+                  ) : (
+                    <ImageUpload 
+                       label="FACE DATA"
+                       initialImage={roleImages['default']} 
+                       onImageSelected={(file) => handleImageUpload(file, 'default')} 
+                    />
+                  )}
                 </div>
               </section>
 
               {/* Step 3: Format Panel */}
-              <section className={`bg-black border border-retro-gold relative transition-opacity ${!userImage ? 'opacity-50' : ''}`}>
+              <section className={`bg-black border border-retro-gold relative transition-opacity ${!hasUploadedImages ? 'opacity-50' : ''}`}>
                  <div className="bg-retro-gold/10 p-2 border-b border-retro-gold flex justify-between items-center">
                     <h3 className="text-sm font-bold text-retro-gold font-mono uppercase">
                       03 // OUTPUT_CONFIG
@@ -255,59 +358,13 @@ const App: React.FC = () => {
                   </div>
               </section>
 
-              {/* Action Button - Mobile */}
-              <div className="lg:hidden mt-4">
+              {/* Action Button - placed here for both Desktop and Mobile logic flow */}
+               <div className="mt-4">
                  <button
                   onClick={handleGenerate}
                   disabled={isGenerateDisabled}
                   className={`
-                    w-full py-4 font-bold text-lg tracking-widest uppercase font-display transition-all duration-300
-                    border
-                    ${isGenerateDisabled 
-                      ? 'bg-black text-retro-border border-retro-border cursor-not-allowed' 
-                      : 'bg-retro-gold text-black hover:bg-white hover:border-white border-retro-gold shadow-[0_0_15px_rgba(0,255,65,0.5)]'
-                    }
-                  `}
-                >
-                  {getButtonText()}
-                </button>
-              </div>
-            </div>
-
-            {/* Right Column: Scene Selection - ORDER-2 on Mobile */}
-            <div className={`w-full lg:w-2/3 order-2`}>
-               <section className="bg-black border border-retro-gold h-full flex flex-col">
-                <div className="bg-retro-gold/10 p-2 border-b border-retro-gold flex justify-between items-center">
-                   <h3 className="text-sm font-bold text-retro-gold font-mono uppercase">
-                     02 // DATABASE_ACCESS
-                   </h3>
-                   {selectedScene && (
-                      <div className="text-xs text-black bg-retro-gold px-2 font-mono">
-                        SELECTED: {selectedScene.id.toUpperCase()}
-                      </div>
-                    )}
-                </div>
-                
-                <div className="p-4 flex-1">
-                  <SceneSelector 
-                    selectedSceneId={selectedScene?.id || null} 
-                    selectedRole={selectedRole}
-                    onSceneSelect={(scene) => {
-                      setSelectedScene(scene);
-                      setSelectedRole(null); 
-                    }}
-                    onRoleSelect={(role) => setSelectedRole(role)}
-                  />
-                </div>
-              </section>
-
-               {/* Action Button - Desktop */}
-               <div className="hidden lg:flex justify-end mt-6">
-                 <button
-                  onClick={handleGenerate}
-                  disabled={isGenerateDisabled}
-                  className={`
-                    px-12 py-6 font-bold text-xl tracking-widest uppercase font-display transition-all duration-300
+                    w-full py-6 font-bold text-xl tracking-widest uppercase font-display transition-all duration-300
                     border-2 relative overflow-hidden group
                     ${isGenerateDisabled 
                       ? 'bg-black text-retro-border border-retro-border cursor-not-allowed' 
@@ -315,12 +372,13 @@ const App: React.FC = () => {
                     }
                   `}
                 >
-                  <span className="relative z-10 flex items-center gap-2">
+                  <span className="relative z-10 flex items-center justify-center gap-2">
                     {getButtonText()}
                   </span>
                 </button>
               </div>
             </div>
+            
           </div>
 
           {/* Result Area */}
