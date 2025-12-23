@@ -662,11 +662,27 @@ export const MOVIE_SCENES: MovieScene[] = [
     title: '风骚律师 (Better Call Saul)',
     year: '2015',
     description: '彩色西装，法律广告，吉米。',
-    prompt: 'Iconic TV poster for Better Call Saul. The User is Saul Goodman. Wearing a flashy colorful suit (Yellow/Orange). Pointing finger at camera ("It\'s all good man!"). Scales of justice in background.',
+    prompt: 'Iconic TV poster for Better Call Saul.',
     category: 'tv',
     previewColor: 'from-yellow-500 to-red-500',
     previewImage: 'https://images.unsplash.com/photo-1589829085413-56de8ae18c73?q=80&w=400',
-    posterFont: 'Brush Script font (Saul style), Red/Yellow slanted text.'
+    posterFont: 'Brush Script font (Saul style), Red/Yellow slanted text.',
+    roles: [
+      {
+        id: 'saul',
+        name: 'Saul Goodman',
+        description: '吉米，花哨西装，指着镜头。',
+        prompt: 'Cosplay as Saul Goodman. Wearing a flashy colorful suit (Yellow/Orange) and comb-over hair. Pointing finger at camera ("It\'s all good man!"). Scales of justice or Albuquerque desert background.',
+        previewImage: 'https://images.unsplash.com/photo-1555861496-0666c8981751?q=80&w=400'
+      },
+      {
+        id: 'gus',
+        name: 'Gus Fring',
+        description: '炸鸡叔，一丝不苟的西装，眼镜。',
+        prompt: 'Cosplay as Gus Fring. Wearing a pristine grey suit, yellow shirt and tie, rimless glasses. Standing with hands clasped politely. Expression is calm but menacing. Los Pollos Hermanos logo in background.',
+        previewImage: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?q=80&w=400'
+      }
+    ]
   },
   {
     id: 'prison_break',

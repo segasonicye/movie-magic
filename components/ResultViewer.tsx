@@ -37,6 +37,40 @@ const ResultViewer: React.FC<ResultViewerProps> = ({ imageUrl, loading, error, o
     }
   }, [loading]);
 
+  const handleDownload = async () => {
+    if (!imageUrl) return;
+    
+    const timestamp = new Date().toISOString().slice(0, 10);
+    const safeTitle = title ? title.replace(/[^a-z0-9]/gi, '_').toLowerCase() : 'scene';
+    const filename = `movie_magic_${safeTitle}_${timestamp}.png`;
+
+    try {
+      // Fetch the data URL to get a blob, which is more reliable for downloads on mobile browsers
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Cleanup
+      setTimeout(() => window.URL.revokeObjectURL(blobUrl), 100);
+    } catch (e) {
+      console.error("Download failed:", e);
+      // Fallback for simple data URI download
+      const link = document.createElement('a');
+      link.href = imageUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] bg-black border border-retro-gold p-8 font-mono relative overflow-hidden">
@@ -85,36 +119,40 @@ const ResultViewer: React.FC<ResultViewerProps> = ({ imageUrl, loading, error, o
   }
 
   if (imageUrl) {
-    const timestamp = new Date().toISOString().slice(0, 10);
-    const safeTitle = title ? title.replace(/[^a-z0-9]/gi, '_').toLowerCase() : 'scene';
-    const filename = `movie_magic_${safeTitle}_${timestamp}.png`;
-    
     return (
       <div className="flex flex-col items-center animate-fade-in w-full">
-        <div className="bg-black border-2 border-retro-gold p-1 relative shadow-[0_0_30px_rgba(0,255,65,0.2)] max-w-2xl w-full group">
+        {/* Image Display */}
+        <div className="bg-black border-2 border-retro-gold p-1 relative shadow-[0_0_30px_rgba(0,255,65,0.2)] max-w-2xl w-full">
            <img 
             src={imageUrl} 
             alt="Generated Scene" 
             className="w-full h-auto"
           />
-           <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-             <a 
-              href={imageUrl} 
-              download={filename}
-              className="px-6 py-2 bg-retro-gold text-black font-bold font-display tracking-wider hover:bg-white hover:text-black border border-black shadow-lg flex items-center gap-2"
-             >
-               <span>💾</span> DOWNLOAD_FILE
-             </a>
-           </div>
         </div>
         
-        <div className="mt-8 flex gap-4">
-           <button 
-             onClick={onReset}
-             className="px-8 py-3 bg-black border border-retro-teal text-retro-teal font-mono hover:border-retro-gold hover:text-retro-gold transition-colors"
-           >
-             &lt; NEW_SIMULATION
-           </button>
+        {/* Control Panel */}
+        <div className="mt-6 flex flex-col items-center w-full gap-4 max-w-2xl">
+           
+           {/* Mobile Hint */}
+           <p className="text-retro-teal text-[10px] font-mono uppercase opacity-70 md:hidden border border-retro-teal/30 px-2 py-1 bg-black">
+             [ TIP: LONG PRESS IMAGE TO SAVE IF BUTTON FAILS ]
+           </p>
+
+           <div className="flex flex-col sm:flex-row gap-4 w-full justify-center">
+             <button 
+              onClick={handleDownload}
+              className="flex-1 px-6 py-3 bg-retro-gold text-black font-bold font-display tracking-wider hover:bg-white hover:text-black border border-black shadow-lg flex items-center justify-center gap-2 min-w-[200px]"
+             >
+               <span>💾</span> DOWNLOAD_FILE
+             </button>
+
+             <button 
+               onClick={onReset}
+               className="flex-1 px-6 py-3 bg-black border border-retro-teal text-retro-teal font-mono hover:border-retro-gold hover:text-retro-gold transition-colors flex items-center justify-center gap-2 min-w-[200px]"
+             >
+               <span>↻</span> NEW_SIMULATION
+             </button>
+           </div>
         </div>
       </div>
     );
